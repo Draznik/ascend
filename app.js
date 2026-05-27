@@ -55,7 +55,7 @@ const STORAGE_KEY = 'lifeRPGState_v3';
 // ─────────────────────────────────────────────
 //  V5 CONSTANTS (must be before loadGameState)
 // ─────────────────────────────────────────────
-const APP_VERSION = 'V8.0a';
+const APP_VERSION = 'V8.0b';
 
 const TITLES_BY_SKILL = {
     serenite:   [
@@ -329,6 +329,12 @@ function cleanFutureData(silent = false) {
         report.tasks += before - gameState.taskCompletionDates.length;
         if (typeof computeTaskStreak === 'function')
             gameState.taskStreak = computeTaskStreak();
+    }
+    // V8.0b: drop future task-XP buckets
+    if (gameState.tasksXPAwardedByDate) {
+        Object.keys(gameState.tasksXPAwardedByDate).forEach(d => {
+            if (d > today) { delete gameState.tasksXPAwardedByDate[d]; report.tasks++; }
+        });
     }
 
     saveGameState();
@@ -766,6 +772,9 @@ function loadGameState() {
         if (typeof gameState.taskStreak !== 'number') gameState.taskStreak = 0;
         if (typeof gameState.longestTaskStreak !== 'number') gameState.longestTaskStreak = 0;
         if (!Array.isArray(gameState.taskCompletionDates)) gameState.taskCompletionDates = [];
+        // V8.0b: daily task XP cap tracking (cap = 60 raw XP / day before weapon boost)
+        if (!gameState.tasksXPAwardedByDate || typeof gameState.tasksXPAwardedByDate !== 'object')
+            gameState.tasksXPAwardedByDate = {};
 
         // V5: migrate habits — add frequency and history fields
         gameState.habits.forEach(h => {
@@ -3637,7 +3646,9 @@ function confirmDifficultyChange(newDiff) {
 
     const avail = getCurrentAvailableBoss();
     const displayBoss = _displayBossId ? BOSS_DATA.find(b => b.id === _displayBossId) : avail;
-    if (!displayBoss || displayBoss.id !== 'b01') return;
+    // V8.0b fix: was restricted to displayBoss.id === 'b01' — that was a leftover
+    // from V6.1 limited rollout. Now allowed for any boss.
+    if (!displayBoss) return;
 
     document.getElementById('diff-modal-overlay')?.remove();
 
@@ -5765,7 +5776,25 @@ function confirmRemoveJournalPin() {
    ═══════════════════════════════════════════ */
 
 const TASK_XP = 15;
+// V8.0b: Daily task XP cap (raw, before weapon boost).
+// Prevents fast leveling via spamming low-effort tasks.
+const TASK_XP_DAILY_CAP = 60;
 let _taskCarryOverTodayDone = null; // memoized date to avoid running carry-over twice
+
+// V8.0b: counter helpers
+function getTasksXPAwardedForDate(dateStr) {
+    if (!gameState.tasksXPAwardedByDate) gameState.tasksXPAwardedByDate = {};
+    return gameState.tasksXPAwardedByDate[dateStr] || 0;
+}
+function bumpTasksXPAwardedForDate(dateStr, delta) {
+    if (!gameState.tasksXPAwardedByDate) gameState.tasksXPAwardedByDate = {};
+    const v = (gameState.tasksXPAwardedByDate[dateStr] || 0) + delta;
+    if (v <= 0) delete gameState.tasksXPAwardedByDate[dateStr];
+    else gameState.tasksXPAwardedByDate[dateStr] = v;
+}
+function getTasksXPRemainingForDate(dateStr) {
+    return Math.max(0, TASK_XP_DAILY_CAP - getTasksXPAwardedForDate(dateStr));
+}
 
 function nextTaskId() {
     return (gameState.tasks || []).reduce((m, t) => Math.max(m, t.id || 0), 0) + 1;
@@ -5808,16 +5837,26 @@ function toggleTask(taskId) {
         if (gameState.taskStreak > (gameState.longestTaskStreak||0)) {
             gameState.longestTaskStreak = gameState.taskStreak;
         }
-        // XP with streak bonus
+        // XP with streak bonus, then clamped to daily cap
         const streakBonus = Math.max(0, gameState.taskStreak - 1) * 5;
-        const xp = Math.floor(TASK_XP * (1 + streakBonus/100));
-        gainSkillXP(task.skill || 'discipline', xp, `Tâche — ${task.name}`);
-        const mult = getWeaponBoostMult(task.skill || 'discipline');
-        const boosted = Math.floor(xp * mult);
-        const hasBonus = boosted > xp;
-        const bonusText = hasBonus ? ` (+${Math.round((mult-1)*100)}% ⚔️)` : '';
-        const xpText = hasBonus ? `+${xp} → +${boosted}` : `+${xp}`;
-        toast(`📋 "${task.name}" — ${xpText} XP${bonusText}`, 'success');
+        const xpFull = Math.floor(TASK_XP * (1 + streakBonus/100));
+        const xpRemaining = getTasksXPRemainingForDate(today);
+        const xp = Math.min(xpFull, xpRemaining);
+        task.xpGiven = xp; // remember for un-toggle
+
+        if (xp > 0) {
+            gainSkillXP(task.skill || 'discipline', xp, `Tâche — ${task.name}`);
+            bumpTasksXPAwardedForDate(today, xp);
+            const mult = getWeaponBoostMult(task.skill || 'discipline');
+            const boosted = Math.floor(xp * mult);
+            const hasBonus = boosted > xp;
+            const bonusText = hasBonus ? ` (+${Math.round((mult-1)*100)}% ⚔️)` : '';
+            const xpText = hasBonus ? `+${xp} → +${boosted}` : `+${xp}`;
+            const capWarn = xp < xpFull ? ` · cap atteint (${xp}/${xpFull})` : '';
+            toast(`📋 "${task.name}" — ${xpText} XP${bonusText}${capWarn}`, 'success');
+        } else {
+            toast(`📋 "${task.name}" complétée — cap ${TASK_XP_DAILY_CAP} XP/jour atteint, pas d'XP`, 'info');
+        }
     } else {
         // Un-mark: only allow if completed today (to avoid breaking past streaks)
         if (task.completedDate !== today) {
@@ -5826,10 +5865,13 @@ function toggleTask(taskId) {
         }
         task.completed = false;
         task.completedDate = null;
-        // Remove XP for this task
-        const streakBonus = Math.max(0, gameState.taskStreak - 1) * 5;
-        const xp = Math.floor(TASK_XP * (1 + streakBonus/100));
-        removeSkillXP(task.skill || 'discipline', xp);
+        // Remove XP that was actually given (may be less than full if cap was hit)
+        const xpToRemove = task.xpGiven || 0;
+        if (xpToRemove > 0) {
+            removeSkillXP(task.skill || 'discipline', xpToRemove);
+            bumpTasksXPAwardedForDate(today, -xpToRemove);
+        }
+        task.xpGiven = 0;
         // If no other task completed today, remove today from completionDates
         const stillOneDoneToday = gameState.tasks.some(t => t.completed && t.completedDate === today);
         if (!stillOneDoneToday) {
@@ -5858,25 +5900,38 @@ function toggleTaskYesterday(taskId) {
     if (gameState.taskStreak > (gameState.longestTaskStreak||0)) {
         gameState.longestTaskStreak = gameState.taskStreak;
     }
+    // V8.0b: cap applies to yesterday's bucket
     const streakBonus = Math.max(0, gameState.taskStreak - 1) * 5;
-    const xp = Math.floor(TASK_XP * (1 + streakBonus/100));
-    gainSkillXP(task.skill || 'discipline', xp, `Tâche — ${task.name} (hier)`);
+    const xpFull = Math.floor(TASK_XP * (1 + streakBonus/100));
+    const xpRemaining = getTasksXPRemainingForDate(yStr);
+    const xp = Math.min(xpFull, xpRemaining);
+    task.xpGiven = xp;
+
+    if (xp > 0) {
+        gainSkillXP(task.skill || 'discipline', xp, `Tâche — ${task.name} (hier)`);
+        bumpTasksXPAwardedForDate(yStr, xp);
+        const capWarn = xp < xpFull ? ` · cap d'hier atteint (${xp}/${xpFull})` : '';
+        toast(`✅ "${task.name}" validée pour hier — +${xp} XP${capWarn}`, 'success');
+    } else {
+        toast(`✅ "${task.name}" validée pour hier — cap ${TASK_XP_DAILY_CAP} XP d'hier déjà atteint`, 'info');
+    }
     saveGameState();
     updateHabitsTasksDot();
     renderTasksPage();
-    toast(`✅ "${task.name}" validée pour hier — +${xp} XP`, 'success');
 }
 
 // Delete a task (whether completed or not)
 function deleteTask(taskId) {
     const task = (gameState.tasks||[]).find(t => t.id === taskId);
     if (!task) return;
-    // If it was completed today, also remove its XP (clean exit)
+    // V8.0b: if it was completed today, refund its actual xpGiven (cap-aware)
     const today = getLocalDateStr(getNow());
     if (task.completed && task.completedDate === today) {
-        const streakBonus = Math.max(0, gameState.taskStreak - 1) * 5;
-        const xp = Math.floor(TASK_XP * (1 + streakBonus/100));
-        removeSkillXP(task.skill || 'discipline', xp);
+        const xpToRemove = task.xpGiven || 0;
+        if (xpToRemove > 0) {
+            removeSkillXP(task.skill || 'discipline', xpToRemove);
+            bumpTasksXPAwardedForDate(today, -xpToRemove);
+        }
         const stillOneDoneToday = gameState.tasks.some(t => t !== task && t.completed && t.completedDate === today);
         if (!stillOneDoneToday) {
             gameState.taskCompletionDates = gameState.taskCompletionDates.filter(d => d !== today);
@@ -5980,12 +6035,19 @@ function renderTasksPage() {
 
     const streak = gameState.taskStreak || 0;
     const longest = gameState.longestTaskStreak || 0;
+    // V8.0b: XP cap counter for today
+    const xpToday = getTasksXPAwardedForDate(today);
+    const xpCapHit = xpToday >= TASK_XP_DAILY_CAP;
 
     el.innerHTML = `
     <div class="tasks-header">
         <div class="tasks-header-top">
             <div class="section-title" style="margin:0;">Tâches du jour</div>
             <div class="tasks-streak">🔥 <strong>${streak}</strong> j ${longest > 0 ? `· record ${longest}` : ''}</div>
+        </div>
+        <div class="tasks-cap ${xpCapHit ? 'cap-hit' : ''}" title="Cap journalier pour limiter le farm">
+            💎 XP tâches : <strong>${xpToday}</strong>/${TASK_XP_DAILY_CAP}
+            ${xpCapHit ? ' · cap atteint' : ''}
         </div>
         <div class="add-habit-form" style="margin-top:8px;">
             <input type="text" id="task-input" placeholder="Ajouter une tâche..."
@@ -6040,6 +6102,7 @@ function renderTaskCard(task, kind) {
             </div>
             <div class="task-actions">
                 ${showJM1 ? `<button class="task-mini-btn" onclick="toggleTaskYesterday(${task.id})" title="Validée hier">J-1</button>` : ''}
+                <button class="task-mini-btn" onclick="openEditTaskModal(${task.id})" title="Modifier">✏️</button>
                 <button class="task-mini-btn task-delete" onclick="confirmDeleteTask(${task.id})" title="Supprimer">🗑</button>
             </div>
         </div>`;
@@ -6054,6 +6117,7 @@ function renderTaskCard(task, kind) {
                 </div>
             </div>
             <div class="task-actions">
+                <button class="task-mini-btn" onclick="openEditTaskModal(${task.id})" title="Modifier">✏️</button>
                 <button class="task-mini-btn task-delete" onclick="confirmDeleteTask(${task.id})" title="Supprimer">🗑</button>
             </div>
         </div>`;
@@ -6143,6 +6207,85 @@ function confirmDeleteTask(id) {
         confirmLabel: 'Supprimer',
         onConfirm: () => deleteTask(id)
     });
+}
+
+// V8.0b: edit a task (name + skill)
+function openEditTaskModal(taskId) {
+    const task = (gameState.tasks||[]).find(t => t.id === taskId);
+    if (!task) return;
+
+    document.querySelectorAll('#edit-task-modal').forEach(m => m.remove());
+    const skillOpts = Object.entries(SKILL_CONFIG).map(([k, cfg]) => `
+        <button class="task-skill-pick" data-skill="${k}" onclick="selectEditTaskSkillPick('${k}')" style="border-color:${cfg.color}40;">
+            <span style="color:${cfg.color}">${cfg.icon}</span> ${cfg.name}
+        </button>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'edit-task-modal';
+    overlay.innerHTML = `
+        <div class="modal-box">
+            <div class="modal-title gold">✏️ Modifier la tâche</div>
+            <div class="modal-body" style="text-align:left;">
+                <label class="modal-label">Nom</label>
+                <input type="text" id="edit-task-name" class="modal-input" value="${escapeHtml(task.name)}" />
+                <label class="modal-label" style="margin-top:12px;">Compétence</label>
+                <div class="task-skill-picker" id="edit-task-skill-picker">${skillOpts}</div>
+                <input type="hidden" id="edit-task-skill-val" value="${task.skill || 'discipline'}" />
+                <input type="hidden" id="edit-task-id-val" value="${task.id}" />
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="document.getElementById('edit-task-modal').remove()">Annuler</button>
+                <button class="btn-gold" onclick="commitEditTask()">Valider</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    selectEditTaskSkillPick(task.skill || 'discipline');
+    setTimeout(() => document.getElementById('edit-task-name')?.focus(), 50);
+}
+
+function selectEditTaskSkillPick(skill) {
+    document.querySelectorAll('#edit-task-skill-picker .task-skill-pick').forEach(b => {
+        b.classList.toggle('active', b.dataset.skill === skill);
+    });
+    const h = document.getElementById('edit-task-skill-val');
+    if (h) h.value = skill;
+}
+
+function commitEditTask() {
+    const id    = parseInt(document.getElementById('edit-task-id-val')?.value, 10);
+    const name  = document.getElementById('edit-task-name')?.value.trim();
+    const skill = document.getElementById('edit-task-skill-val')?.value || 'discipline';
+    if (!name) { toast('Donne un nom à la tâche', 'error'); return; }
+    const task = (gameState.tasks||[]).find(t => t.id === id);
+    if (!task) return;
+
+    // V8.0b: if skill changed and task was completed today, transfer the actual
+    // xpGiven from old skill to new skill (no double-count, no loss).
+    const today = getLocalDateStr(getNow());
+    const wasCompletedToday = task.completed && task.completedDate === today;
+    const oldSkill = task.skill || 'discipline';
+    const skillChanged = oldSkill !== skill;
+
+    task.name = name;
+    task.skill = skill;
+
+    if (wasCompletedToday && skillChanged) {
+        const xp = task.xpGiven || 0;
+        if (xp > 0) {
+            removeSkillXP(oldSkill, xp);
+            gainSkillXP(skill, xp, `Tâche — ${task.name}`);
+            toast(`Tâche modifiée — ${xp} XP déplacés vers ${SKILL_CONFIG[skill]?.name || skill}`, 'success');
+        } else {
+            toast('Tâche modifiée ✓', 'success');
+        }
+    } else {
+        toast('Tâche modifiée ✓', 'success');
+    }
+    saveGameState();
+    document.getElementById('edit-task-modal')?.remove();
+    renderTasksPage();
 }
 
 

@@ -2879,3 +2879,21 @@ button, .tab-btn, .boss-chip, .camp-subtab, .btn-gold, .btn-blue, .btn-cancel {
 .modal-input:focus {
     outline: none; border-color: var(--gold);
 }
+
+/* V8.0b — Tasks XP cap counter */
+.tasks-cap {
+    margin-top: 6px;
+    font-size: 0.78rem; color: var(--text-dim);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+}
+.tasks-cap strong { color: var(--gold); }
+.tasks-cap.cap-hit {
+    background: rgba(245,140,66,0.08);
+    border-color: rgba(245,140,66,0.3);
+    color: #f5a04a;
+}
+.tasks-cap.cap-hit strong { color: #f5a04a; }
