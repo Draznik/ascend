@@ -1,0 +1,24 @@
+{
+  "name": "Ascend",
+  "short_name": "Ascend",
+  "description": "Transforme tes habitudes en aventure. Développe-toi, niveau après niveau.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070912",
+  "theme_color": "#070912",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
