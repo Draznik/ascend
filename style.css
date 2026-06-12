@@ -3129,3 +3129,36 @@ button, .tab-btn, .boss-chip, .camp-subtab, .btn-gold, .btn-blue, .btn-cancel {
     font-size: 0.64rem; color: var(--text-dim);
     font-style: italic; text-align: center;
 }
+
+/* V9.1a — Timer ambience picker + resume-sound */
+.timer-amb-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 6px; margin-top: 6px;
+}
+.timer-amb-pick {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 2px;
+    cursor: pointer;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 1.1rem;
+    transition: all 0.15s;
+}
+.timer-amb-label {
+    font-size: 0.58rem; color: var(--text-dim);
+    font-family: 'Outfit', sans-serif;
+}
+.timer-amb-pick.active {
+    background: rgba(245,200,66,0.12);
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(245,200,66,0.15);
+}
+.timer-amb-pick.active .timer-amb-label { color: var(--gold); }
+.timer-resume-sound {
+    margin: 0 auto 8px;
+    display: block;
+    border-color: rgba(245,200,66,0.3);
+    color: var(--gold);
+}

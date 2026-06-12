@@ -55,7 +55,7 @@ const STORAGE_KEY = 'lifeRPGState_v3';
 // ─────────────────────────────────────────────
 //  V5 CONSTANTS (must be before loadGameState)
 // ─────────────────────────────────────────────
-const APP_VERSION = 'V9.1';
+const APP_VERSION = 'V9.1a';
 
 const TITLES_BY_SKILL = {
     serenite:   [
@@ -6435,6 +6435,14 @@ function openTimerModal() {
         <button class="timer-dur-pick" data-mins="${d}" onclick="selectTimerDuration(${d})">${d}<span class="timer-dur-unit">min</span></button>
     `).join('');
 
+    // V9.1a: ambience picker inside the timer modal — sound starts with the timer
+    const lastAmb = localStorage.getItem('lifeRPG_timerAmbience') || 'none';
+    const ambBtns = [{ id:'none', icon:'🔇', label:'Aucun' }, ...AMBIENT_DEFS].map(a => `
+        <button class="timer-amb-pick ${a.id === lastAmb ? 'active' : ''}" data-amb="${a.id}"
+                onclick="selectTimerAmbience('${a.id}')">
+            <span>${a.icon}</span><span class="timer-amb-label">${a.label}</span>
+        </button>`).join('');
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.id = 'timer-modal';
@@ -6447,6 +6455,9 @@ function openTimerModal() {
                 <label class="modal-label" style="margin-top:12px;">Durée</label>
                 <div class="timer-dur-grid">${durBtns}</div>
                 <input type="hidden" id="timer-duration-val" value="25" />
+                <label class="modal-label" style="margin-top:12px;">Son d'ambiance</label>
+                <div class="timer-amb-grid">${ambBtns}</div>
+                <input type="hidden" id="timer-ambience-val" value="${lastAmb}" />
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="document.getElementById('timer-modal').remove()">Annuler</button>
@@ -6456,6 +6467,14 @@ function openTimerModal() {
     document.body.appendChild(overlay);
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     selectTimerDuration(25);
+}
+
+function selectTimerAmbience(amb) {
+    document.querySelectorAll('.timer-amb-pick').forEach(b => {
+        b.classList.toggle('active', b.dataset.amb === amb);
+    });
+    const h = document.getElementById('timer-ambience-val');
+    if (h) h.value = amb;
 }
 
 function selectTimerDuration(mins) {
@@ -6469,6 +6488,7 @@ function selectTimerDuration(mins) {
 function startTimer() {
     const sessionId = parseInt(document.getElementById('timer-session-select')?.value, 10);
     const mins = parseInt(document.getElementById('timer-duration-val')?.value, 10) || 25;
+    const ambience = document.getElementById('timer-ambience-val')?.value || 'none';
     const session = gameState.sessions.find(s => s.id === sessionId);
     if (!session) { toast('Session introuvable', 'error'); return; }
 
@@ -6484,9 +6504,14 @@ function startTimer() {
         startTime: new Date().toISOString(),
         endTime: end.toISOString(),
         paused: false,
-        pausedRemainingMs: null
+        pausedRemainingMs: null,
+        ambience: ambience !== 'none' ? ambience : null,
+        fadeStarted: false
     };
     saveGameState();
+    // V9.1a: remember last ambience choice + start it with the timer
+    localStorage.setItem('lifeRPG_timerAmbience', ambience);
+    if (ambience !== 'none') playAmbient(ambience);
     document.getElementById('timer-modal')?.remove();
     startTimerTick();
     renderTimerPanel();
@@ -6498,6 +6523,8 @@ function pauseTimer() {
     if (!t || t.paused) return;
     t.paused = true;
     t.pausedRemainingMs = Math.max(0, new Date(t.endTime) - new Date());
+    // V9.1a: silence the ambience during pause
+    if (t.ambience && _ambient.current === t.ambience) stopAmbient();
     saveGameState();
     renderTimerPanel();
 }
@@ -6510,6 +6537,9 @@ function resumeTimer() {
     t.endTime = end.toISOString();
     t.paused = false;
     t.pausedRemainingMs = null;
+    t.fadeStarted = false; // re-arm the fade in case we paused inside the final 10s
+    // V9.1a: restart the ambience on resume
+    if (t.ambience) playAmbient(t.ambience);
     saveGameState();
     startTimerTick();
     renderTimerPanel();
@@ -6523,6 +6553,7 @@ function cancelTimer() {
         confirmLabel: 'Annuler le timer',
         onConfirm: () => {
             stopTimerTick();
+            stopAmbient(); // V9.1a: cut the ambience with the timer
             gameState.activeTimer = null;
             saveGameState();
             renderTimerPanel();
@@ -6551,7 +6582,8 @@ function completeTimer(minsOverride) {
     gameState.activeTimer = null;
     saveGameState();
 
-    // Notify: vibration + beep
+    // V9.1a: ensure ambience is fully stopped (fade may still be running), then GONG
+    stopAmbient();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     playTimerEndBeep();
 
@@ -6567,6 +6599,11 @@ function startTimerTick() {
         const t = gameState.activeTimer;
         if (!t || t.paused) return;
         const remaining = new Date(t.endTime) - new Date();
+        // V9.1a: progressive volume fade over the final 10 seconds
+        if (t.ambience && !t.fadeStarted && remaining <= 10000 && remaining > 0 && _ambient.current === t.ambience) {
+            t.fadeStarted = true;
+            fadeOutAmbient(Math.max(1, remaining / 1000));
+        }
         if (remaining <= 0) {
             completeTimer();
         } else {
@@ -6611,6 +6648,9 @@ function renderTimerPanel() {
         </div>
         <div class="timer-countdown" id="timer-countdown">${m}:${String(s).padStart(2,'0')}</div>
         ${t.paused ? '<div class="timer-paused-label">⏸ En pause</div>' : ''}
+        ${t.ambience && !t.paused && _ambient.current !== t.ambience
+            ? `<button class="timer-btn timer-resume-sound" onclick="playAmbient('${t.ambience}');renderTimerPanel();">🔊 Reprendre le son</button>`
+            : ''}
         <div class="timer-controls">
             ${t.paused
                 ? `<button class="timer-btn" onclick="resumeTimer()">▶️ Reprendre</button>`
@@ -6621,23 +6661,62 @@ function renderTimerPanel() {
     </div>`;
 }
 
-// Short completion beep via Web Audio (no file needed)
+// V9.1a: end-of-timer GONG. Uses sounds/gong.mp3 if present, else synthesizes
+// a singing-bowl-like strike (inharmonic partials + long decay).
 function playTimerEndBeep() {
+    checkAudioFile(GONG_FILE).then(available => {
+        if (available) {
+            const el = new Audio(GONG_FILE);
+            el.volume = Math.min(1, getAmbientVolume() + 0.3);
+            el.play().catch(() => playSynthGong());
+        } else {
+            playSynthGong();
+        }
+    });
+}
+
+function playSynthGong() {
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;
-        [880, 1108.73, 1318.51].forEach((freq, i) => { // A5, C#6, E6 arpeggio
+        const master = ctx.createGain();
+        master.gain.value = 0.6;
+        master.connect(ctx.destination);
+        // Inharmonic partials typical of a gong/singing bowl (ratios ≠ integers)
+        const partials = [
+            { ratio: 1.00, gain: 0.50, decay: 5.0 },
+            { ratio: 2.76, gain: 0.25, decay: 3.5 },
+            { ratio: 5.40, gain: 0.12, decay: 2.2 },
+            { ratio: 8.93, gain: 0.06, decay: 1.4 }
+        ];
+        const f0 = 196; // G3-ish fundamental — warm, meditative
+        partials.forEach(p => {
             const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
+            const g = ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0, now + i * 0.18);
-            gain.gain.linearRampToValueAtTime(0.25, now + i * 0.18 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.18 + 0.5);
-            osc.connect(gain).connect(ctx.destination);
-            osc.start(now + i * 0.18);
-            osc.stop(now + i * 0.18 + 0.55);
+            osc.frequency.value = f0 * p.ratio;
+            // Slight detune wobble for shimmer
+            const wobble = ctx.createOscillator();
+            const wobbleG = ctx.createGain();
+            wobble.frequency.value = 1.5 + Math.random();
+            wobbleG.gain.value = 1.2;
+            wobble.connect(wobbleG).connect(osc.frequency);
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(p.gain, now + 0.015); // fast strike
+            g.gain.exponentialRampToValueAtTime(0.0005, now + p.decay);
+            osc.connect(g).connect(master);
+            osc.start(now); osc.stop(now + p.decay + 0.1);
+            wobble.start(now); wobble.stop(now + p.decay + 0.1);
         });
+        // Strike transient: short noise burst
+        const buf = makeNoiseBuffer(ctx);
+        const strike = ctx.createBufferSource(); strike.buffer = buf;
+        const sg = ctx.createGain();
+        const sbp = ctx.createBiquadFilter(); sbp.type = 'bandpass'; sbp.frequency.value = 800; sbp.Q.value = 1;
+        sg.gain.setValueAtTime(0.3, now);
+        sg.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        strike.connect(sbp).connect(sg).connect(master);
+        strike.start(now); strike.stop(now + 0.15);
     } catch (e) { /* audio unavailable — vibration already fired */ }
 }
 
@@ -6647,7 +6726,35 @@ function playTimerEndBeep() {
    ═══════════════════════════════════════════ */
 
 let _audioCtx = null;
-let _ambient = { current: null, nodes: [], masterGain: null, intervals: [] };
+let _ambient = { current: null, nodes: [], masterGain: null, intervals: [], audioEl: null, fading: false };
+
+// V9.1a: real audio files take priority over synthesis when present in /sounds/.
+// Drop rain.mp3 / storm.mp3 / ocean.mp3 / forest.mp3 / gong.mp3 into the repo's
+// sounds/ folder — no code change needed, fallback to synthesis if missing.
+const AMBIENT_FILES = {
+    rain:   'sounds/rain.mp3',
+    storm:  'sounds/storm.mp3',
+    ocean:  'sounds/ocean.mp3',
+    forest: 'sounds/forest.mp3'
+};
+const GONG_FILE = 'sounds/gong.mp3';
+// Cache of HEAD-check results so we don't re-probe on every play
+const _audioFileAvailable = {};
+
+async function checkAudioFile(url) {
+    if (url in _audioFileAvailable) return _audioFileAvailable[url];
+    try {
+        const res = await fetch(url, { method: 'HEAD' });
+        const ct = res.headers.get('content-type') || '';
+        // Vercel SPA-rewrites can return index.html for missing files — require audio/*
+        const ok = res.ok && ct.startsWith('audio');
+        _audioFileAvailable[url] = ok;
+        return ok;
+    } catch (e) {
+        _audioFileAvailable[url] = false;
+        return false;
+    }
+}
 
 function getAudioContext() {
     if (!_audioCtx) {
@@ -6673,6 +6780,12 @@ function stopAmbient() {
     _ambient.nodes = [];
     if (_ambient.masterGain) { try { _ambient.masterGain.disconnect(); } catch(e){} }
     _ambient.masterGain = null;
+    // V9.1a: stop file-based audio too
+    if (_ambient.audioEl) {
+        try { _ambient.audioEl.pause(); _ambient.audioEl.src = ''; } catch(e){}
+        _ambient.audioEl = null;
+    }
+    _ambient.fading = false;
     _ambient.current = null;
     renderAmbientPanel();
 }
@@ -6685,17 +6798,60 @@ function getAmbientVolume() {
 function setAmbientVolume(v) {
     localStorage.setItem('lifeRPG_ambientVol', v);
     if (_ambient.masterGain) _ambient.masterGain.gain.value = v;
+    // V9.1a: file-based playback volume
+    if (_ambient.audioEl && !_ambient.fading) _ambient.audioEl.volume = v;
+}
+
+// V9.1a: fade the current ambience to silence over `seconds`, then stop.
+function fadeOutAmbient(seconds = 10) {
+    if (!_ambient.current || _ambient.fading) return;
+    _ambient.fading = true;
+    const steps = 40;
+    const stepMs = (seconds * 1000) / steps;
+    const startVol = getAmbientVolume();
+    let i = 0;
+    const fadeInt = setInterval(() => {
+        i++;
+        const v = Math.max(0, startVol * (1 - i / steps));
+        if (_ambient.masterGain) _ambient.masterGain.gain.value = v;
+        if (_ambient.audioEl) _ambient.audioEl.volume = v;
+        if (i >= steps) {
+            clearInterval(fadeInt);
+            stopAmbient();
+        }
+    }, stepMs);
+    _ambient.intervals.push(fadeInt);
 }
 
 function playAmbient(kind) {
     if (_ambient.current === kind) { stopAmbient(); return; } // toggle off
     stopAmbient();
+    _ambient.current = kind;
+
+    // V9.1a: prefer a real audio file when available, else synthesize
+    const fileUrl = AMBIENT_FILES[kind];
+    checkAudioFile(fileUrl).then(available => {
+        if (_ambient.current !== kind) return; // user changed selection meanwhile
+        if (available) {
+            const el = new Audio(fileUrl);
+            el.loop = true;
+            el.volume = getAmbientVolume();
+            el.play().catch(() => { _startSynthAmbient(kind); });
+            _ambient.audioEl = el;
+            renderAmbientPanel();
+        } else {
+            _startSynthAmbient(kind);
+        }
+    });
+}
+
+function _startSynthAmbient(kind) {
+    if (_ambient.current !== kind) return;
     const ctx = getAudioContext();
     const master = ctx.createGain();
     master.gain.value = getAmbientVolume();
     master.connect(ctx.destination);
     _ambient.masterGain = master;
-    _ambient.current = kind;
 
     const noiseBuf = makeNoiseBuffer(ctx);
 
