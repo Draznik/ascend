@@ -55,7 +55,7 @@ const STORAGE_KEY = 'lifeRPGState_v3';
 // ─────────────────────────────────────────────
 //  V5 CONSTANTS (must be before loadGameState)
 // ─────────────────────────────────────────────
-const APP_VERSION = 'V8.0b';
+const APP_VERSION = 'V8.1';
 
 const TITLES_BY_SKILL = {
     serenite:   [
@@ -758,6 +758,14 @@ function loadGameState() {
         if (!gameState.xpHistory) gameState.xpHistory = [];
         if (!gameState.titles)    gameState.titles = { unlocked:[], active:null };
         if (!gameState.campaign)  gameState.campaign = null;
+        // V8.1 (N4) migration: old rule rested until next Monday; clamp any active
+        // rest to at most 48h from now so users don't wait out the old long timer.
+        if (gameState.campaign?.restUntil) {
+            const maxRest = new Date(); maxRest.setHours(maxRest.getHours() + 48);
+            if (new Date(gameState.campaign.restUntil) > maxRest) {
+                gameState.campaign.restUntil = maxRest.toISOString();
+            }
+        }
         // V7.0: Journal structure
         if (!gameState.journal) gameState.journal = {
             pinHash: null,
@@ -907,8 +915,11 @@ function _checkDailyResetWithDate(now) {
     twoDaysAgo.setDate(twoDaysAgo.getDate()-2);
     const twoDaysAgoStr = getLocalDateStr(twoDaysAgo);
 
-    const completedCount = gameState.habits.filter(h => h.completed).length;
-    const isPerfectDay   = completedCount >= 8;
+    // V8.1 (N1): perfect day = ALL daily habits completed (weekly habits excluded —
+    // they stay checked all week and were inflating the count; a fixed >=8 threshold
+    // also didn't adapt to the user's actual habit count).
+    const dailyHabits = gameState.habits.filter(h => (h.frequency || 'daily') === 'daily');
+    const isPerfectDay = dailyHabits.length > 0 && dailyHabits.every(h => h.completed);
 
     gameState.habits.forEach(habit => {
         if (habit.frequency === 'weekly') {
@@ -1076,6 +1087,10 @@ function generateDailyQuests(now) {
             });
         }
 
+        // V8.1 (N2): keep completed weekly quest IDs only within the SAME ISO week.
+        // Previously they were kept forever, so a weekly quest re-picked the next
+        // week with the same ID appeared as already-completed and never reset.
+        const sameWeek = gameState.quests && gameState.quests.weekStr === currentWeek;
         gameState.quests = {
             date: todayStr,
             weekStr: currentWeek,
@@ -1083,9 +1098,9 @@ function generateDailyQuests(now) {
             weeklyArr,
             // Keep `weekly` for backward compat (first quest of array)
             weekly: weeklyArr[0] || null,
-            completedIds: completedIds.filter(id => {
-                return id.startsWith('w_');
-            })
+            completedIds: sameWeek
+                ? completedIds.filter(id => id.startsWith('w_'))
+                : []
         };
         saveGameState();
     }
@@ -2196,13 +2211,14 @@ function renderHabitsPage() {
 
     const perfectEl = document.getElementById('pill-perfect');
     const streakEl  = document.getElementById('pill-streak');
-    const doneTodayCount = gameState.habits.filter(h => h.completed).length;
-    const progressTo8 = `${doneTodayCount}/8`;
-    const allDone8  = doneTodayCount >= 8;
+    // V8.1 (N1): progress shown over DAILY habits only, dynamic count
+    const dailyH = gameState.habits.filter(h => (h.frequency || 'daily') === 'daily');
+    const doneTodayCount = dailyH.filter(h => h.completed).length;
+    const progressLabel = `${doneTodayCount}/${dailyH.length}`;
     if (perfectEl) {
         const ps = gameState.stats.perfectStreak || 0;
         // V6.0c fix: HTML already has 🔥 icon — don't add it again in JS
-        perfectEl.textContent = ps > 0 ? `${ps}j` : progressTo8;
+        perfectEl.textContent = ps > 0 ? `${ps}j` : progressLabel;
     }
     if (streakEl) {
         const lps = gameState.stats.longestPerfectStreak || 0;
@@ -3459,7 +3475,7 @@ function getCurrentAvailableBoss() {
 function startBossFight(bossId) {
     const c = gameState.campaign;
     if (!c) return;
-    if (c.restUntil && new Date(c.restUntil) > getNow()) { toast('Repos en cours — reviens lundi.','info'); return; }
+    if (c.restUntil && new Date(c.restUntil) > getNow()) { toast('Repos en cours — encore un peu de patience.','info'); return; }
     if (!isBossUnlocked(bossId)) { toast('Boss verrouillé.','error'); return; }
     const boss = BOSS_DATA.find(b => b.id === bossId);
     if (!boss) return;
@@ -3480,7 +3496,7 @@ function startBossRefight(bossId) {
     const c = gameState.campaign;
     if (!c) return;
     if (!c.bossDefeated.includes(bossId)) { toast('Boss pas encore vaincu.','error'); return; }
-    if (c.restUntil && new Date(c.restUntil) > getNow()) { toast('Repos en cours — reviens lundi.','info'); return; }
+    if (c.restUntil && new Date(c.restUntil) > getNow()) { toast('Repos en cours — encore un peu de patience.','info'); return; }
     if (c.currentBossId) { toast('Termine ton combat actuel d\'abord.','error'); return; }
     const boss = BOSS_DATA.find(b => b.id === bossId);
     if (!boss) return;
@@ -3507,8 +3523,11 @@ function defeatBoss(boss) {
     }
     c.currentBossId = null; c.bossStartDate = null; c.bossXPAccumulated = 0;
     c._isRefight = false;
-    // V5.4: rest until next Monday — next boss spawns weekly
-    c.restUntil = getNextMonday(getNow()).toISOString();
+    // V8.1 (N4): rest = 48h after victory (was: until next Monday — a Wednesday
+    // win meant a 4+ day wait, too long).
+    const restEnd = new Date(getNow());
+    restEnd.setHours(restEnd.getHours() + 48);
+    c.restUntil = restEnd.toISOString();
     // V6.2 fix: reset display boss cache so next boss appears without reload
     _displayBossId = null;
     if (!isRefight) {
@@ -3841,13 +3860,12 @@ function buildBossTab() {
     let statusHtml = '';
     if (isResting) {
         const restEnd = new Date(c.restUntil);
-        const day = restEnd.getDay();
-        const dayNames = ['dim','lun','mar','mer','jeu','ven','sam'];
-        const restDay = dayNames[day];
-        const restDate = `${restEnd.getDate()}/${restEnd.getMonth()+1}`;
-        const hoursLeft = Math.ceil((restEnd-getNow())/3600000);
-        const dayslabel = hoursLeft > 24 ? `${Math.ceil(hoursLeft/24)}j` : `${hoursLeft}h`;
-        statusHtml = `<div class="boss-status-banner rest">😴 Repos — prochain boss <strong>lundi ${restDate}</strong> (dans ${dayslabel})</div>`;
+        const hoursLeft = Math.max(0, Math.ceil((restEnd-getNow())/3600000));
+        const dayslabel = hoursLeft > 24
+            ? `${Math.floor(hoursLeft/24)}j ${hoursLeft%24}h`
+            : `${hoursLeft}h`;
+        // V8.1 (N4): rest is now 48h post-victory, show countdown
+        statusHtml = `<div class="boss-status-banner rest">😴 Repos du héros — prochain boss dans <strong>${dayslabel}</strong></div>`;
     }
     // Actions
     let actHtml = '';
@@ -4079,8 +4097,26 @@ function setMood(value) {
         // First mood of day: small bonus to Sérénité
         gainSkillXP('serenite', 5, 'Note humeur');
     }
+    // V8.1 (N3): mirror to today's journal entry so the journal mood row highlights
+    if (gameState.journal) {
+        if (!gameState.journal.entries) gameState.journal.entries = {};
+        if (!gameState.journal.entries[today]) {
+            gameState.journal.entries[today] = {
+                question: (typeof getJournalQuestionForDate === 'function')
+                    ? getJournalQuestionForDate(new Date(today + 'T12:00:00')) : '',
+                answer: '', freeText: '', mood: null,
+                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+            };
+        }
+        gameState.journal.entries[today].mood = value;
+        gameState.journal.entries[today].updatedAt = new Date().toISOString();
+    }
     saveGameState();
     updateMoodFab();
+    // V8.1 (N3): refresh journal page if it's currently displayed
+    const journalVisible = document.getElementById('prof-content-journal')?.style.display !== 'none'
+        && document.querySelector('.page.active')?.dataset.page === 'profil';
+    if (journalVisible && typeof renderJournalPage === 'function') renderJournalPage();
     const mood = MOOD_OPTIONS.find(m => m.value === value);
     toast(`Humeur enregistrée — ${mood.label}`, 'success');
 }
@@ -5381,6 +5417,12 @@ function renderJournalMain() {
         question: getJournalQuestionForDate(new Date(dateToShow + 'T12:00:00')),
         answer: '', freeText: '', mood: null
     };
+    // V8.1 (N3): if entry has no mood, fall back to gameState.moods for this date
+    // (mood set via the FAB before any journal entry existed, or historical data)
+    if (entry.mood === null || entry.mood === undefined) {
+        const m = (gameState.moods || []).find(x => x.date === dateToShow);
+        if (m) entry.mood = m.value;
+    }
     const isToday = dateToShow === today;
     const friendlyDate = formatJournalDate(dateToShow);
     const streak = computeJournalStreak();
