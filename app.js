@@ -55,7 +55,7 @@ const STORAGE_KEY = 'lifeRPGState_v3';
 // ─────────────────────────────────────────────
 //  V5 CONSTANTS (must be before loadGameState)
 // ─────────────────────────────────────────────
-const APP_VERSION = 'V9.1a';
+const APP_VERSION = 'V9.2';
 
 const TITLES_BY_SKILL = {
     serenite:   [
@@ -2652,6 +2652,10 @@ function renderProfilPage() {
     // V6.0a: Mood section
     const moodEl = document.getElementById('profil-mood-section');
     if (moodEl) moodEl.innerHTML = buildMoodSection();
+
+    // V9.2: correlation view
+    const corrEl = document.getElementById('profil-correlation-section');
+    if (corrEl) corrEl.innerHTML = buildCorrelationSection();
 
     // Titles section
     const titlesEl = document.getElementById('profil-titles-section');
@@ -6405,6 +6409,199 @@ function commitEditTask() {
     renderTasksPage();
 }
 
+
+/* ═══════════════════════════════════════════
+   V9.2 — CORRELATION VIEW (mood × activity)
+   Uses ONLY internal data: moods, habit.history, session logs, task completions.
+   Optional J-1 shift: "yesterday's activity → this morning's mood".
+   ═══════════════════════════════════════════ */
+
+let _corrPeriod = 30;     // 30 or 90 days
+let _corrShift = false;   // false = same-day, true = activity(J-1) vs mood(J)
+
+function setCorrPeriod(days) { _corrPeriod = days; renderProfilPage(); }
+function toggleCorrShift()   { _corrShift = !_corrShift; renderProfilPage(); }
+
+// Build per-day dataset for the last `days` days (oldest → newest)
+function buildCorrelationData(days) {
+    const out = [];
+    const moodByDate = {};
+    (gameState.moods || []).forEach(m => { moodByDate[m.date] = m.value; });
+
+    const dailyHabits = (gameState.habits || []).filter(h => (h.frequency || 'daily') === 'daily');
+    const habitSets = dailyHabits.map(h => new Set(h.history || []));
+
+    // Session minutes per date
+    const sessionMins = {};
+    (gameState.sessions || []).forEach(s => {
+        (s.logs || []).forEach(l => {
+            if (l.date) sessionMins[l.date] = (sessionMins[l.date] || 0) + (l.minutes || 0);
+        });
+    });
+
+    // Tasks completed per date
+    const tasksByDate = {};
+    (gameState.tasks || []).forEach(t => {
+        if (t.completed && t.completedDate)
+            tasksByDate[t.completedDate] = (tasksByDate[t.completedDate] || 0) + 1;
+    });
+
+    const now = getNow();
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now); d.setDate(d.getDate() - i);
+        const ds = getLocalDateStr(d);
+        // Activity date: same day, or previous day when J-1 shift is on
+        const ad = new Date(d); if (_corrShift) ad.setDate(ad.getDate() - 1);
+        const ads = getLocalDateStr(ad);
+
+        const habitsDone = habitSets.filter(s => s.has(ads)).length;
+        const habitsPct = habitSets.length > 0 ? habitsDone / habitSets.length : 0;
+
+        out.push({
+            date: ds,
+            mood: moodByDate[ds] ?? null,                  // 1-5 or null
+            habitsPct,                                      // 0-1
+            sessionMins: sessionMins[ads] || 0,
+            tasks: tasksByDate[ads] || 0,
+            journal: (typeof hasJournalContent === 'function') ? hasJournalContent(ads) : false
+        });
+    }
+    return out;
+}
+
+// Average mood over a filtered subset; returns null if < 3 data points (not significant)
+function avgMoodWhere(data, predicate) {
+    const vals = data.filter(d => d.mood !== null && predicate(d)).map(d => d.mood);
+    if (vals.length < 3) return null;
+    return vals.reduce((a,b) => a+b, 0) / vals.length;
+}
+
+function buildCorrelationSection() {
+    const data = buildCorrelationData(_corrPeriod);
+    const withMood = data.filter(d => d.mood !== null);
+
+    if (withMood.length < 5) {
+        return `<div class="corr-card">
+            <div class="corr-empty">Pas encore assez de données — note ton humeur quelques jours de plus et reviens ici. 📈</div>
+        </div>`;
+    }
+
+    // ── Correlation stats (the most actionable part) ──
+    const fmtAvg = v => v === null ? null : v.toFixed(1);
+    const pairs = [
+        {
+            label: '🏃 Session',
+            with:    avgMoodWhere(data, d => d.sessionMins > 0),
+            without: avgMoodWhere(data, d => d.sessionMins === 0)
+        },
+        {
+            label: '✅ Habitudes ≥ 80%',
+            with:    avgMoodWhere(data, d => d.habitsPct >= 0.8),
+            without: avgMoodWhere(data, d => d.habitsPct < 0.5)
+        },
+        {
+            label: '📖 Journal écrit',
+            with:    avgMoodWhere(data, d => d.journal),
+            without: avgMoodWhere(data, d => !d.journal)
+        },
+        {
+            label: '📋 Tâche faite',
+            with:    avgMoodWhere(data, d => d.tasks > 0),
+            without: avgMoodWhere(data, d => d.tasks === 0)
+        }
+    ];
+
+    const statRows = pairs.map(p => {
+        if (p.with === null || p.without === null) {
+            return `<div class="corr-stat-row dim">
+                <span class="corr-stat-label">${p.label}</span>
+                <span class="corr-stat-na">pas assez de données</span>
+            </div>`;
+        }
+        const delta = p.with - p.without;
+        const sign = delta > 0.05 ? 'pos' : delta < -0.05 ? 'neg' : 'neutral';
+        const arrow = sign === 'pos' ? '↑' : sign === 'neg' ? '↓' : '→';
+        return `<div class="corr-stat-row">
+            <span class="corr-stat-label">${p.label}</span>
+            <span class="corr-stat-vals">
+                <span class="corr-with">${fmtAvg(p.with)}</span>
+                <span class="corr-vs">vs</span>
+                <span class="corr-without">${fmtAvg(p.without)}</span>
+                <span class="corr-delta ${sign}">${arrow} ${Math.abs(delta).toFixed(1)}</span>
+            </span>
+        </div>`;
+    }).join('');
+
+    // ── SVG chart: mood line over activity bars ──
+    const W = 340, H = 150, padL = 22, padR = 6, padT = 10, padB = 18;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const n = data.length;
+    const xAt = i => padL + (i / Math.max(1, n - 1)) * plotW;
+    const yMood = v => padT + (1 - (v - 1) / 4) * plotH;        // 1-5 → bottom-top
+    const hBar  = pct => pct * plotH;
+
+    // Habit bars
+    const barW = Math.max(1.5, plotW / n - 1);
+    const bars = data.map((d, i) =>
+        `<rect x="${(xAt(i) - barW/2).toFixed(1)}" y="${(padT + plotH - hBar(d.habitsPct)).toFixed(1)}"
+               width="${barW.toFixed(1)}" height="${hBar(d.habitsPct).toFixed(1)}"
+               class="corr-bar" />`).join('');
+
+    // Session dots (at the very bottom)
+    const sessDots = data.map((d, i) => d.sessionMins > 0
+        ? `<circle cx="${xAt(i).toFixed(1)}" cy="${H - 6}" r="2.2" class="corr-sess-dot" />`
+        : '').join('');
+
+    // Mood polyline — break segments when gap between recorded days
+    let moodPath = '';
+    let prevIdx = null;
+    data.forEach((d, i) => {
+        if (d.mood === null) return;
+        const x = xAt(i).toFixed(1), y = yMood(d.mood).toFixed(1);
+        if (prevIdx !== null && i - prevIdx <= 3) moodPath += ` L ${x} ${y}`;
+        else moodPath += ` M ${x} ${y}`;
+        prevIdx = i;
+    });
+    const moodDots = data.map((d, i) => d.mood !== null
+        ? `<circle cx="${xAt(i).toFixed(1)}" cy="${yMood(d.mood).toFixed(1)}" r="2.4" class="corr-mood-dot" />`
+        : '').join('');
+
+    // Y-axis mood guides (1,3,5)
+    const guides = [1,3,5].map(v =>
+        `<line x1="${padL}" y1="${yMood(v).toFixed(1)}" x2="${W-padR}" y2="${yMood(v).toFixed(1)}" class="corr-guide" />
+         <text x="${padL-5}" y="${(yMood(v)+3).toFixed(1)}" class="corr-axis-label">${v}</text>`).join('');
+
+    return `
+    <div class="corr-card">
+        <div class="corr-toolbar">
+            <div class="corr-period-toggle">
+                <button class="corr-tgl ${_corrPeriod===30?'active':''}" onclick="setCorrPeriod(30)">30j</button>
+                <button class="corr-tgl ${_corrPeriod===90?'active':''}" onclick="setCorrPeriod(90)">90j</button>
+            </div>
+            <button class="corr-shift-btn ${_corrShift?'active':''}" onclick="toggleCorrShift()"
+                    title="Comparer l'humeur du jour à l'activité de la VEILLE">
+                ${_corrShift ? '🌙 Activité J-1' : '☀️ Même jour'}
+            </button>
+        </div>
+        <svg viewBox="0 0 ${W} ${H}" class="corr-svg" preserveAspectRatio="xMidYMid meet">
+            ${guides}
+            ${bars}
+            ${sessDots}
+            <path d="${moodPath.trim()}" class="corr-mood-line" fill="none" />
+            ${moodDots}
+        </svg>
+        <div class="corr-legend">
+            <span><i class="corr-leg-line"></i> Humeur</span>
+            <span><i class="corr-leg-bar"></i> % habitudes</span>
+            <span><i class="corr-leg-dot"></i> Session</span>
+        </div>
+        <div class="corr-stats">
+            <div class="corr-stats-title">Humeur moyenne ${_corrShift ? '(activité de la veille)' : '(même jour)'}</div>
+            ${statRows}
+            <div class="corr-stats-note">avec <span class="corr-with">●</span> vs sans <span class="corr-without">●</span> — sur ${_corrPeriod} jours</div>
+        </div>
+    </div>`;
+}
 
 /* ═══════════════════════════════════════════
    V9.0a — SESSION TIMER
