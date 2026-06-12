@@ -55,7 +55,7 @@ const STORAGE_KEY = 'lifeRPGState_v3';
 // ─────────────────────────────────────────────
 //  V5 CONSTANTS (must be before loadGameState)
 // ─────────────────────────────────────────────
-const APP_VERSION = 'V8.1';
+const APP_VERSION = 'V9.1';
 
 const TITLES_BY_SKILL = {
     serenite:   [
@@ -136,20 +136,20 @@ const WEAPON_POOLS = {
 const BOSS_DATA = [
     { id:'b01', name:'Sanglier Géant',              act:1, actName:'Les Terres Sauvages', skill:'endurance', xpBase:3500,  timerDays:7,  img:'images/boar_acte_1.webp',   emoji:'🐗', lore:'Une bête ancestrale qui broie les os des imprudents.' },
     { id:'b02', name:'Brigand des Chemins',          act:1, actName:'Les Terres Sauvages', skill:'discipline',xpBase:3500,  timerDays:7,  img:'images/bandit_acte_1.webp',   emoji:'🗡️', lore:'Il rôde aux carrefours, attendant les voyageurs seuls.' },
-    { id:'b03', name:'Ours des Cimes',               act:1, actName:'Les Terres Sauvages', skill:'endurance', xpBase:3500,  timerDays:7,  img:'images/ours_acte_1.webp',     emoji:'🐻', lore:'Gardien des hauteurs, personne ne passe sans son accord.' },
-    { id:'b04', name:'Loup Alpha',                   act:2, actName:'La Forêt Profonde',   skill:'endurance', xpBase:4500,  timerDays:10, img:'images/loup_acte_2.webp',     emoji:'🐺', lore:'Ses yeux dorés voient à travers le brouillard.' },
+    { id:'b03', name:'Ours des Cimes',               act:1, actName:'Les Terres Sauvages', skill:'maitrise', xpBase:3500,  timerDays:7,  img:'images/ours_acte_1.webp',     emoji:'🐻', lore:'Gardien des hauteurs, personne ne passe sans son accord.' },
+    { id:'b04', name:'Loup Alpha',                   act:2, actName:'La Forêt Profonde',   skill:'sagesse', xpBase:4500,  timerDays:10, img:'images/loup_acte_2.webp',     emoji:'🐺', lore:'Ses yeux dorés voient à travers le brouillard.' },
     { id:'b05', name:'Reine des Guêpes',             act:2, actName:'La Forêt Profonde',   skill:'serenite',  xpBase:4500,  timerDays:10, img:'images/guêpe_acte_2.webp',   emoji:'🐝', lore:'Son bourdonnement annonce la fin.' },
-    { id:'b06', name:'Géant de Pierre',              act:2, actName:'La Forêt Profonde',   skill:'discipline',xpBase:4500,  timerDays:10, img:'images/GOLEM_ACTE_2.webp',   emoji:'🗿', lore:'Né de la roche ancienne, il ne connaît pas la fatigue.' },
+    { id:'b06', name:'Géant de Pierre',              act:2, actName:'La Forêt Profonde',   skill:'endurance',xpBase:4500,  timerDays:10, img:'images/GOLEM_ACTE_2.webp',   emoji:'🗿', lore:'Né de la roche ancienne, il ne connaît pas la fatigue.' },
     { id:'b07', name:'Chevalier Maudit',             act:3, actName:'Les Terres Brûlées',  skill:'maitrise',  xpBase:5500,  timerDays:14, img:'images/chevalier_acte_3.webp',emoji:'⚔️',lore:"Condamné à se battre pour l'éternité." },
     { id:'b08', name:'Sorcière des Cendres',         act:3, actName:'Les Terres Brûlées',  skill:'sagesse',   xpBase:5500,  timerDays:14, img:'',                          emoji:'🔥', lore:'Elle transforme tout ce qu\'elle touche en cendres.' },
-    { id:'b09', name:'Seigneur de Guerre',           act:3, actName:'Les Terres Brûlées',  skill:'endurance', xpBase:5500,  timerDays:14, img:'',                          emoji:'💀', lore:"Son armée n'a jamais connu la défaite." },
+    { id:'b09', name:'Seigneur de Guerre',           act:3, actName:'Les Terres Brûlées',  skill:'discipline', xpBase:5500,  timerDays:14, img:'',                          emoji:'💀', lore:"Son armée n'a jamais connu la défaite." },
     { id:'b10', name:'Effigie Rampante',             act:4, actName:"L'Abîsse",            skill:'serenite',  xpBase:6500,  timerDays:21, img:'',                          emoji:'👁️', lore:'Elle rampe dans l\'ombre et mange les esprits.' },
     { id:'b11', name:'Loup-Garou des Ruines',        act:4, actName:"L'Abîsse",            skill:'endurance', xpBase:6500,  timerDays:21, img:'images/loup_garou_acte_4.webp',emoji:'🌕',lore:'La pleine lune réveille une rage sans fond.' },
     { id:'b12', name:"Troll de l'Abîsse",            act:4, actName:"L'Abîsse",            skill:'discipline',xpBase:6500,  timerDays:21, img:'',                          emoji:'🧌', lore:'Son corps est fait de roche et de ténèbres.' },
-    { id:'b13', name:'Kraken des Marais',            act:4, actName:"L'Abîsse",            skill:'serenite',  xpBase:6500,  timerDays:21, img:'',                          emoji:'🦑', lore:'Ses tentacules s\'étendent sur des kilomètres.' },
+    { id:'b13', name:'Kraken des Marais',            act:4, actName:"L'Abîsse",            skill:'sagesse',  xpBase:6500,  timerDays:21, img:'',                          emoji:'🦑', lore:'Ses tentacules s\'étendent sur des kilomètres.' },
     { id:'b14', name:'Ignareth le Dragon de Cendre', act:5, actName:'Le Cosmos',           skill:'endurance', xpBase:8000,  timerDays:30, img:'images/ignareth_acte_5.webp',emoji:'🐉', lore:'Son souffle transforme les montagnes en poussière.' },
     { id:'b15', name:"Veyral l'Ange Déchu",          act:5, actName:'Le Cosmos',           skill:'maitrise',  xpBase:8000,  timerDays:30, img:'',                          emoji:'👼', lore:"Il a choisi la chute plutôt que l'obéissance." },
-    { id:'b16', name:'Kharoth le Titan Oublié',      act:5, actName:'Le Cosmos',           skill:'discipline',xpBase:8000,  timerDays:30, img:'',                          emoji:'⛰️', lore:'Il dormait depuis la naissance des étoiles.' },
+    { id:'b16', name:'Kharoth le Titan Oublié',      act:5, actName:'Le Cosmos',           skill:'serenite',xpBase:8000,  timerDays:30, img:'',                          emoji:'⛰️', lore:'Il dormait depuis la naissance des étoiles.' },
     { id:'b17', name:"L'Innommable",                 act:5, actName:'Le Cosmos',           skill:'all',       xpBase:0,     timerDays:66, img:'images/l_innomable.webp',    emoji:'🌑', lore:"Il n'a pas de nom. Il est la fin.", isFinal:true, conditionBased:true }
 ];
 
@@ -730,6 +730,115 @@ function saveGameState() {
     }
 }
 
+// V9.1 audit: SINGLE source of truth for all state migrations & defaults.
+// Called by loadGameState() on startup AND by importGameData() on JSON restore,
+// so old backups always get every migration. Add any future migration HERE only.
+function migrateGameState() {
+    if (!gameState) return;
+    if (!gameState.username)  gameState.username = 'Hero';
+    if (!gameState.skills)    gameState.skills = { endurance:{level:1,currentXP:0,totalXP:0}, sagesse:{level:1,currentXP:0,totalXP:0}, discipline:{level:1,currentXP:0,totalXP:0}, serenite:{level:1,currentXP:0,totalXP:0}, maitrise:{level:1,currentXP:0,totalXP:0} };
+    if (!gameState.stats)     gameState.stats = { totalHabitsCompleted:0, perfectDays:0, longestStreak:0 };
+    if (!gameState.sessions)  gameState.sessions = [];
+    if (!gameState.habits)    gameState.habits = [];
+    if (!gameState.lastResetDate) gameState.lastResetDate = getLocalDateStr(new Date());
+    if (!gameState.quests)    gameState.quests = null;
+    if (!gameState.xpHistory) gameState.xpHistory = [];
+    if (!gameState.titles)    gameState.titles = { unlocked:[], active:null };
+    if (!gameState.moods)     gameState.moods = [];
+    if (!gameState.campaign)  gameState.campaign = null;
+
+    // V9.1 (N5): victories registry — boss already defeated before this version
+    // get 'unknown' difficulty (we never recorded it back then).
+    if (gameState.campaign) {
+        if (!gameState.campaign.bossVictories) gameState.campaign.bossVictories = {};
+        (gameState.campaign.bossDefeated || []).forEach(id => {
+            if (!gameState.campaign.bossVictories[id])
+                gameState.campaign.bossVictories[id] = 'unknown';
+        });
+    }
+    // V8.1 (N4) migration: old rule rested until next Monday; clamp any active
+    // rest to at most 48h from now so users don't wait out the old long timer.
+    if (gameState.campaign?.restUntil) {
+        const maxRest = new Date(); maxRest.setHours(maxRest.getHours() + 48);
+        if (new Date(gameState.campaign.restUntil) > maxRest) {
+            gameState.campaign.restUntil = maxRest.toISOString();
+        }
+    }
+    // V7.0: Journal structure
+    if (!gameState.journal) gameState.journal = {
+        pinHash: null,
+        entries: {},          // { 'YYYY-MM-DD': { question, answer, freeText, mood, createdAt, updatedAt } }
+        streak: 0,
+        longestStreak: 0,
+        lastEntryDate: null,
+        xpAwardedDates: []    // dates where +20 XP serenite already given
+    };
+    // V7.0 sub-fields (defensive — partial journal objects from old exports)
+    if (!gameState.journal.entries) gameState.journal.entries = {};
+    if (!Array.isArray(gameState.journal.xpAwardedDates)) gameState.journal.xpAwardedDates = [];
+
+    // V8.0: Tasks (to-do list)
+    if (!Array.isArray(gameState.tasks)) gameState.tasks = [];
+    if (typeof gameState.taskStreak !== 'number') gameState.taskStreak = 0;
+    if (typeof gameState.longestTaskStreak !== 'number') gameState.longestTaskStreak = 0;
+    if (!Array.isArray(gameState.taskCompletionDates)) gameState.taskCompletionDates = [];
+    // V8.0b: daily task XP cap tracking (cap = 60 raw XP / day before weapon boost)
+    if (!gameState.tasksXPAwardedByDate || typeof gameState.tasksXPAwardedByDate !== 'object')
+        gameState.tasksXPAwardedByDate = {};
+    // V9.0a: session timer — survives reloads via absolute endTime
+    if (gameState.activeTimer === undefined) gameState.activeTimer = null;
+
+    // V5: migrate habits — add frequency and history fields
+    gameState.habits.forEach(h => {
+        if (!h.frequency) h.frequency = 'daily';
+        if (!h.history)   h.history = [];
+        if (!h.lastWeekReset && h.frequency === 'weekly')
+            h.lastWeekReset = getISOWeekString(new Date());
+    });
+
+    // V6.2a: Migrate habit.history from xpHistory for pre-V5.3 habits
+    if (gameState.xpHistory && gameState.habits) {
+        gameState.habits.forEach(habit => {
+            if (habit.history && habit.history.length > 0) return;
+            const dates = (gameState.xpHistory || [])
+                .filter(e => e.label && e.label.includes('Habitude') && e.label.includes(habit.name))
+                .map(e => e.date)
+                .filter(Boolean);
+            if (dates.length > 0) {
+                habit.history = [...new Set(dates)].sort();
+            } else if (habit.lastCompleted) {
+                try {
+                    const d = getLocalDateStr(new Date(habit.lastCompleted));
+                    habit.history = [d];
+                } catch(e) {}
+            }
+        });
+    }
+
+    gameState.habits.forEach(h => {
+        if (!h.history) h.history = [];
+        if (!h.category) h.category = h.isRecommended ? (h.recommendedCategory || 'discipline') : 'discipline';
+        h.xpReward = HABIT_XP;
+        if (!h.streak)        h.streak = 0;
+        if (!h.lastCompleted) h.lastCompleted = null;
+    });
+
+    gameState.sessions.forEach(s => {
+        if (!s.logs)          s.logs = [];
+        if (!s.partialCredit) s.partialCredit = [];
+        if (!s.streak)        s.streak = 0;
+    });
+
+    // Rebuild ID counter from ALL entities that consume nextId()
+    const allIds = [
+        ...gameState.habits.map(h=>h.id),
+        ...gameState.sessions.map(s=>s.id),
+        ...gameState.sessions.flatMap(s=>(s.logs||[]).map(l=>l.id)),
+        ...(gameState.tasks||[]).map(t=>t.id)
+    ].filter(id => typeof id === 'number' && isFinite(id));
+    _nextId = allIds.length ? Math.max(...allIds)+1 : 1;
+}
+
 function loadGameState() {
     let saved = localStorage.getItem(STORAGE_KEY);
     // V6.0d: Try backup if main key is missing
@@ -748,95 +857,7 @@ function loadGameState() {
             toast('⚠️ Sauvegarde corrompue — restaure ton export.', 'error');
             return;
         }
-        if (!gameState.username)  gameState.username = 'Hero';
-        if (!gameState.skills)    gameState.skills = { endurance:{level:1,currentXP:0,totalXP:0}, sagesse:{level:1,currentXP:0,totalXP:0}, discipline:{level:1,currentXP:0,totalXP:0}, serenite:{level:1,currentXP:0,totalXP:0}, maitrise:{level:1,currentXP:0,totalXP:0} };
-        if (!gameState.stats)     gameState.stats = { totalHabitsCompleted:0, perfectDays:0, longestStreak:0 };
-        if (!gameState.sessions)  gameState.sessions = [];
-        if (!gameState.habits)    gameState.habits = [];
-        if (!gameState.lastResetDate) gameState.lastResetDate = getLocalDateStr(new Date());
-        if (!gameState.quests)    gameState.quests = null;
-        if (!gameState.xpHistory) gameState.xpHistory = [];
-        if (!gameState.titles)    gameState.titles = { unlocked:[], active:null };
-        if (!gameState.campaign)  gameState.campaign = null;
-        // V8.1 (N4) migration: old rule rested until next Monday; clamp any active
-        // rest to at most 48h from now so users don't wait out the old long timer.
-        if (gameState.campaign?.restUntil) {
-            const maxRest = new Date(); maxRest.setHours(maxRest.getHours() + 48);
-            if (new Date(gameState.campaign.restUntil) > maxRest) {
-                gameState.campaign.restUntil = maxRest.toISOString();
-            }
-        }
-        // V7.0: Journal structure
-        if (!gameState.journal) gameState.journal = {
-            pinHash: null,
-            entries: {},          // { 'YYYY-MM-DD': { question, answer, freeText, mood, createdAt, updatedAt } }
-            streak: 0,
-            longestStreak: 0,
-            lastEntryDate: null,
-            xpAwardedDates: []    // dates where +20 XP serenite already given
-        };
-        // V8.0: Tasks (to-do list)
-        if (!Array.isArray(gameState.tasks)) gameState.tasks = [];
-        if (typeof gameState.taskStreak !== 'number') gameState.taskStreak = 0;
-        if (typeof gameState.longestTaskStreak !== 'number') gameState.longestTaskStreak = 0;
-        if (!Array.isArray(gameState.taskCompletionDates)) gameState.taskCompletionDates = [];
-        // V8.0b: daily task XP cap tracking (cap = 60 raw XP / day before weapon boost)
-        if (!gameState.tasksXPAwardedByDate || typeof gameState.tasksXPAwardedByDate !== 'object')
-            gameState.tasksXPAwardedByDate = {};
-
-        // V5: migrate habits — add frequency and history fields
-        gameState.habits.forEach(h => {
-            if (!h.frequency) h.frequency = 'daily';
-            if (!h.history)   h.history = [];
-            if (!h.lastWeekReset && h.frequency === 'weekly')
-                h.lastWeekReset = getISOWeekString(new Date());
-        });
-
-        // V6.2a: Migrate habit.history from xpHistory for pre-V5.3 habits
-        // Fixes streak disappearance after computeHabitStreak refactor
-        if (gameState.xpHistory && gameState.habits) {
-            gameState.habits.forEach(habit => {
-                if (habit.history && habit.history.length > 0) return; // already has history
-                // Seed from xpHistory entries matching this habit
-                const dates = (gameState.xpHistory || [])
-                    .filter(e => e.label && e.label.includes('Habitude') && e.label.includes(habit.name))
-                    .map(e => e.date)
-                    .filter(Boolean);
-                if (dates.length > 0) {
-                    habit.history = [...new Set(dates)].sort();
-                } else if (habit.lastCompleted) {
-                    // Fallback: at least seed with lastCompleted date
-                    try {
-                        const d = getLocalDateStr(new Date(habit.lastCompleted));
-                        habit.history = [d];
-                    } catch(e) {}
-                }
-            });
-        }
-
-        gameState.habits.forEach(h => {
-            if (!h.history) h.history = []; // ['2026-05-05', ...] for calendar
-        });
-
-        gameState.habits.forEach(h => {
-            if (!h.category) h.category = h.isRecommended ? (h.recommendedCategory || 'discipline') : 'discipline';
-            h.xpReward = HABIT_XP;
-            if (!h.streak)        h.streak = 0;
-            if (!h.lastCompleted) h.lastCompleted = null;
-        });
-
-        gameState.sessions.forEach(s => {
-            if (!s.logs)          s.logs = [];
-            if (!s.partialCredit) s.partialCredit = [];
-            if (!s.streak)        s.streak = 0;
-        });
-
-        const allIds = [
-            ...gameState.habits.map(h=>h.id),
-            ...gameState.sessions.map(s=>s.id),
-            ...gameState.sessions.flatMap(s=>(s.logs||[]).map(l=>l.id))
-        ].filter(Boolean);
-        _nextId = allIds.length ? Math.max(...allIds)+1 : 1;
+        migrateGameState();
     }
 
     // V4: seed recommended habits if none exist yet
@@ -1544,7 +1565,7 @@ function confirmDeleteHabit(habitId) {
     showModal({
         type: 'danger',
         title: 'Supprimer l\'habitude?',
-        body: `"${habit.name}" sera définitivement supprimée.`,
+        body: `"${escapeHtml(habit.name)}" sera définitivement supprimée.`,
         confirmLabel: 'Supprimer',
         onConfirm: () => {
             if (habit.completed) {
@@ -1582,7 +1603,7 @@ function openEditHabitModal(habitId) {
             ${habit.streak>0 ? `<div class="modal-streak-warn">🔥 ${habit.streak} jours de streak — préservé.</div>` : ''}
             <div class="modal-field">
                 <label>Nom</label>
-                <input type="text" id="eh-name" value="${habit.name}" />
+                <input type="text" id="eh-name" value="${escapeHtml(habit.name)}" />
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" id="eh-cancel">Annuler</button>
@@ -1695,7 +1716,7 @@ function openLogSessionModal(sessionId) {
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
         <div class="modal-box create">
-            <div class="modal-title green">${cfg.icon} Log — ${session.name}</div>
+            <div class="modal-title green">${cfg.icon} Log — ${escapeHtml(session.name)}</div>
             ${session.streak>0 ? `<div class="modal-streak-warn">🔥 ${session.streak} semaines de streak (+${session.streak*5}% XP)</div>` : ''}
             <div class="modal-field">
                 <label>Durée (minutes)</label>
@@ -1754,7 +1775,7 @@ function openEditSessionModal(sessionId) {
             ${session.streak>0 ? `<div class="modal-streak-warn">🔥 ${session.streak} semaines de streak — préservé.</div>` : ''}
             <div class="modal-field">
                 <label>Nom</label>
-                <input type="text" id="es-name" value="${session.name}" />
+                <input type="text" id="es-name" value="${escapeHtml(session.name)}" />
             </div>
             <div class="modal-field">
                 <label>Compétence</label>
@@ -1797,7 +1818,7 @@ function confirmDeleteSession(sessionId) {
     showModal({
         type: 'danger',
         title: 'Supprimer la session?',
-        body: `"${session.name}" et tous ses logs seront définitivement supprimés.`,
+        body: `"${escapeHtml(session.name)}" et tous ses logs seront définitivement supprimés.`,
         confirmLabel: 'Supprimer',
         onConfirm: () => {
             gameState.sessions = gameState.sessions.filter(s => s.id!==sessionId);
@@ -2284,7 +2305,7 @@ function renderHabitsPage() {
                 <label for="hc-${habit.id}" class="checkmark">✓</label>
             </div>
             <div class="habit-body">
-                <div class="habit-name">${habit.icon ? habit.icon + ' ' : ''}${habit.name} ${recoTag}${weeklyBadge}</div>
+                <div class="habit-name">${habit.icon ? habit.icon + ' ' : ''}${escapeHtml(habit.name)} ${recoTag}${weeklyBadge}</div>
                 <div class="habit-meta">+${xpFinal} XP → ${skillCfg.name}${streakHtml}${weaponHtml}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
@@ -2329,6 +2350,9 @@ function renderHabitsPage() {
 
 // ─── SESSIONS PAGE ───
 function renderSessionsPage() {
+    // V9.0a: render timer & ambient panels
+    if (typeof renderTimerPanel === 'function') renderTimerPanel();
+    if (typeof renderAmbientPanel === 'function') renderAmbientPanel();
     const stage = document.getElementById('sessions-avatar-stage');
     if (stage) {
         // V3.1: exact 90° positions — 12h top, 3h right, 6h bottom, 9h left
@@ -2392,7 +2416,7 @@ function renderSessionsPage() {
                 <div class="session-card-info">
                     <span class="session-icon">${cfg.icon}</span>
                     <div>
-                        <div class="session-name">${session.name}</div>
+                        <div class="session-name">${escapeHtml(session.name)}</div>
                         <div class="session-streak-lbl ${session.streak===0?'none':''}">
                             ${session.streak>0 ? `🔥 ${session.streak}sem streak (+${session.streak*5}% XP)` : 'Pas encore de streak'}
                         </div>
@@ -2916,10 +2940,9 @@ function importGameData(event) {
                 onConfirm: () => {
                     try {
                         gameState = newState;
-                        // Re-init missing fields
-                        if (!gameState.titles)    gameState.titles = { unlocked:[], active:null };
-                        if (!gameState.xpHistory) gameState.xpHistory = [];
-                        if (!gameState.quests)    gameState.quests = null;
+                        // V9.1 audit: run the FULL migration pipeline on imported data
+                        // (old backups get journal/tasks/timer fields, habit migrations, etc.)
+                        migrateGameState();
                         if (!gameState.campaign)  initCampaign();
                         saveGameState();
                         const overlay = document.getElementById('settings-overlay');
@@ -3157,7 +3180,7 @@ function openHabitCalendar(habitId) {
 
     const now = getNow();
     openCalendarModal(
-        `📅 ${habit.name}`,
+        `📅 ${escapeHtml(habit.name)}`,
         dates,
         cfg.color,
         now.getFullYear(),
@@ -3520,6 +3543,15 @@ function defeatBoss(boss) {
     const bonusDrop = daysTaken <= 3;
     if (!c.bossDefeated.includes(boss.id)) {
         c.bossDefeated.push(boss.id);
+    }
+    // V9.1 (N5): record the BEST difficulty this boss was ever defeated at.
+    // Used by the victories listing and the future "all Legendary" END GAME title.
+    if (!c.bossVictories) c.bossVictories = {};
+    const diffRank = d => DIFF_ORDER.indexOf(d);
+    const cur = c.bossVictories[boss.id];
+    const nowDiff = c.difficulty || 'normal';
+    if (!cur || diffRank(nowDiff) > diffRank(cur)) {
+        c.bossVictories[boss.id] = nowDiff;
     }
     c.currentBossId = null; c.bossStartDate = null; c.bossXPAccumulated = 0;
     c._isRefight = false;
@@ -3947,7 +3979,50 @@ function buildBossTab() {
             </div>`}
             <div class="boss-list-header"><span><strong>Acte ${boss.act}</strong> — ${boss.actName}</span><span>${defeatedCount} / ${actBosses.length} vaincus</span></div>
             <div class="boss-chips-wrap"><div class="boss-chips-scroll">${chipsHtml}</div></div>
+            ${buildVictoryBoard()}
         </div>`;
+}
+
+// V9.1 (N5): victory board — every defeated boss with the best difficulty beaten.
+// Goal: see at a glance which bosses to re-fight in Legendary (future END GAME title).
+function buildVictoryBoard() {
+    const c = gameState.campaign;
+    if (!c || !c.bossDefeated || c.bossDefeated.length === 0) return '';
+    const victories = c.bossVictories || {};
+    const DIFF_COLORS = {
+        facile:     '#7dcc7d',
+        normal:     '#8ab4f8',
+        difficile:  '#f5a04a',
+        legendaire: '#f5c842',
+        unknown:    '#777'
+    };
+    const rows = BOSS_DATA
+        .filter(b => c.bossDefeated.includes(b.id))
+        .map(b => {
+            const diff = victories[b.id] || 'unknown';
+            const label = diff === 'unknown' ? 'Inconnue' : DIFF_LABELS[diff];
+            const color = DIFF_COLORS[diff];
+            const isLegend = diff === 'legendaire';
+            return `
+            <div class="victory-row ${isLegend ? 'legend' : ''}">
+                <span class="victory-emoji">${b.emoji}</span>
+                <span class="victory-name">${b.name}</span>
+                <span class="victory-diff" style="color:${color};border-color:${color}40;background:${color}14;">
+                    ${isLegend ? '👑 ' : ''}${label}
+                </span>
+            </div>`;
+        }).join('');
+    const legendCount = c.bossDefeated.filter(id => victories[id] === 'legendaire').length;
+    const totalBosses = BOSS_DATA.length;
+    return `
+    <div class="victory-board">
+        <div class="victory-board-head">
+            <span class="victory-board-title">🏆 Tableau de chasse</span>
+            <span class="victory-board-count">${legendCount}/${totalBosses} en Légendaire</span>
+        </div>
+        ${rows}
+        <div class="victory-board-note">Re-affronte un boss en Légendaire pour améliorer ton tableau.</div>
+    </div>`;
 }
 
 // V6.0b: Build conditions display for L'Innommable
@@ -6331,6 +6406,466 @@ function commitEditTask() {
 }
 
 
+/* ═══════════════════════════════════════════
+   V9.0a — SESSION TIMER
+   Countdown based on absolute endTime → survives reloads & tab switches.
+   On completion: auto-logs the session via logSession(), vibrate + beep.
+   ═══════════════════════════════════════════ */
+
+let _timerInterval = null;
+
+function openTimerModal() {
+    if (gameState.activeTimer) {
+        toast('Un timer est déjà en cours', 'info');
+        return;
+    }
+    if (!gameState.sessions || gameState.sessions.length === 0) {
+        toast('Crée d\'abord une session pour utiliser le timer', 'info');
+        return;
+    }
+    document.querySelectorAll('#timer-modal').forEach(m => m.remove());
+
+    const sessionOpts = gameState.sessions.map(s => {
+        const cfg = SKILL_CONFIG[s.category];
+        return `<option value="${s.id}">${cfg?.icon || ''} ${escapeHtml(s.name)}</option>`;
+    }).join('');
+
+    const durations = [10, 15, 20, 25, 30, 45, 60, 90];
+    const durBtns = durations.map(d => `
+        <button class="timer-dur-pick" data-mins="${d}" onclick="selectTimerDuration(${d})">${d}<span class="timer-dur-unit">min</span></button>
+    `).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'timer-modal';
+    overlay.innerHTML = `
+        <div class="modal-box">
+            <div class="modal-title gold">⏱ Lancer un timer</div>
+            <div class="modal-body" style="text-align:left;">
+                <label class="modal-label">Session</label>
+                <select id="timer-session-select" class="modal-input">${sessionOpts}</select>
+                <label class="modal-label" style="margin-top:12px;">Durée</label>
+                <div class="timer-dur-grid">${durBtns}</div>
+                <input type="hidden" id="timer-duration-val" value="25" />
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="document.getElementById('timer-modal').remove()">Annuler</button>
+                <button class="btn-gold" onclick="startTimer()">Démarrer</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    selectTimerDuration(25);
+}
+
+function selectTimerDuration(mins) {
+    document.querySelectorAll('.timer-dur-pick').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.mins, 10) === mins);
+    });
+    const h = document.getElementById('timer-duration-val');
+    if (h) h.value = mins;
+}
+
+function startTimer() {
+    const sessionId = parseInt(document.getElementById('timer-session-select')?.value, 10);
+    const mins = parseInt(document.getElementById('timer-duration-val')?.value, 10) || 25;
+    const session = gameState.sessions.find(s => s.id === sessionId);
+    if (!session) { toast('Session introuvable', 'error'); return; }
+
+    // V9.1 audit fix: a timer measures REAL elapsed time — use the real clock
+    // for endTime (getNow() is the simulated game clock and broke timers in test mode).
+    // Only the log date (in completeTimer) follows getNow().
+    const end = new Date();
+    end.setMinutes(end.getMinutes() + mins);
+
+    gameState.activeTimer = {
+        sessionId,
+        durationMins: mins,
+        startTime: new Date().toISOString(),
+        endTime: end.toISOString(),
+        paused: false,
+        pausedRemainingMs: null
+    };
+    saveGameState();
+    document.getElementById('timer-modal')?.remove();
+    startTimerTick();
+    renderTimerPanel();
+    toast(`⏱ Timer ${mins} min lancé — bon courage !`, 'success');
+}
+
+function pauseTimer() {
+    const t = gameState.activeTimer;
+    if (!t || t.paused) return;
+    t.paused = true;
+    t.pausedRemainingMs = Math.max(0, new Date(t.endTime) - new Date());
+    saveGameState();
+    renderTimerPanel();
+}
+
+function resumeTimer() {
+    const t = gameState.activeTimer;
+    if (!t || !t.paused) return;
+    const end = new Date();
+    end.setMilliseconds(end.getMilliseconds() + (t.pausedRemainingMs || 0));
+    t.endTime = end.toISOString();
+    t.paused = false;
+    t.pausedRemainingMs = null;
+    saveGameState();
+    startTimerTick();
+    renderTimerPanel();
+}
+
+function cancelTimer() {
+    showModal({
+        type: 'danger',
+        title: 'Annuler le timer ?',
+        body: 'Le temps écoulé ne sera pas enregistré.',
+        confirmLabel: 'Annuler le timer',
+        onConfirm: () => {
+            stopTimerTick();
+            gameState.activeTimer = null;
+            saveGameState();
+            renderTimerPanel();
+            toast('Timer annulé', 'info');
+        }
+    });
+}
+
+// Finish early: logs the elapsed minutes (≥1) instead of the planned duration
+function finishTimerEarly() {
+    const t = gameState.activeTimer;
+    if (!t) return;
+    const elapsedMs = t.paused
+        ? (t.durationMins * 60000 - (t.pausedRemainingMs || 0))
+        : (new Date() - new Date(t.startTime));
+    const elapsedMins = Math.max(1, Math.round(elapsedMs / 60000));
+    completeTimer(elapsedMins);
+}
+
+function completeTimer(minsOverride) {
+    const t = gameState.activeTimer;
+    if (!t) return;
+    stopTimerTick();
+    const mins = minsOverride !== undefined ? minsOverride : t.durationMins;
+    const sessionId = t.sessionId;
+    gameState.activeTimer = null;
+    saveGameState();
+
+    // Notify: vibration + beep
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    playTimerEndBeep();
+
+    // Auto-log via the existing session logging (XP, streak, quests)
+    const todayStr = getLocalDateStr(getNow());
+    logSession(sessionId, mins, todayStr);
+    renderTimerPanel();
+}
+
+function startTimerTick() {
+    stopTimerTick();
+    _timerInterval = setInterval(() => {
+        const t = gameState.activeTimer;
+        if (!t || t.paused) return;
+        const remaining = new Date(t.endTime) - new Date();
+        if (remaining <= 0) {
+            completeTimer();
+        } else {
+            updateTimerDisplay(remaining);
+        }
+    }, 1000);
+}
+
+function stopTimerTick() {
+    if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+}
+
+function updateTimerDisplay(remainingMs) {
+    const el = document.getElementById('timer-countdown');
+    if (!el) return;
+    const totalSec = Math.ceil(remainingMs / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function renderTimerPanel() {
+    const panel = document.getElementById('timer-panel');
+    if (!panel) return;
+    const t = gameState.activeTimer;
+    if (!t) { panel.innerHTML = ''; return; }
+
+    const session = gameState.sessions.find(s => s.id === t.sessionId);
+    const cfg = session ? SKILL_CONFIG[session.category] : null;
+    const remaining = t.paused
+        ? (t.pausedRemainingMs || 0)
+        : Math.max(0, new Date(t.endTime) - new Date());
+    const totalSec = Math.ceil(remaining / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+
+    panel.innerHTML = `
+    <div class="timer-card ${t.paused ? 'paused' : ''}">
+        <div class="timer-card-head">
+            <span class="timer-session-name">${cfg?.icon || '⏱'} ${session ? escapeHtml(session.name) : 'Session'}</span>
+            <span class="timer-duration-badge">${t.durationMins} min</span>
+        </div>
+        <div class="timer-countdown" id="timer-countdown">${m}:${String(s).padStart(2,'0')}</div>
+        ${t.paused ? '<div class="timer-paused-label">⏸ En pause</div>' : ''}
+        <div class="timer-controls">
+            ${t.paused
+                ? `<button class="timer-btn" onclick="resumeTimer()">▶️ Reprendre</button>`
+                : `<button class="timer-btn" onclick="pauseTimer()">⏸ Pause</button>`}
+            <button class="timer-btn" onclick="finishTimerEarly()">✅ Terminer</button>
+            <button class="timer-btn timer-btn-danger" onclick="cancelTimer()">✕</button>
+        </div>
+    </div>`;
+}
+
+// Short completion beep via Web Audio (no file needed)
+function playTimerEndBeep() {
+    try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        [880, 1108.73, 1318.51].forEach((freq, i) => { // A5, C#6, E6 arpeggio
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, now + i * 0.18);
+            gain.gain.linearRampToValueAtTime(0.25, now + i * 0.18 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.18 + 0.5);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(now + i * 0.18);
+            osc.stop(now + i * 0.18 + 0.55);
+        });
+    } catch (e) { /* audio unavailable — vibration already fired */ }
+}
+
+/* ═══════════════════════════════════════════
+   V9.0a — AMBIENT SOUND ENGINE (Web Audio synthesis, zero files)
+   4 ambiences: rain, storm, ocean, forest.
+   ═══════════════════════════════════════════ */
+
+let _audioCtx = null;
+let _ambient = { current: null, nodes: [], masterGain: null, intervals: [] };
+
+function getAudioContext() {
+    if (!_audioCtx) {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    return _audioCtx;
+}
+
+// White-noise buffer factory (2s loop)
+function makeNoiseBuffer(ctx) {
+    const len = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    return buffer;
+}
+
+function stopAmbient() {
+    _ambient.intervals.forEach(id => clearInterval(id));
+    _ambient.intervals = [];
+    _ambient.nodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch(e){} });
+    _ambient.nodes = [];
+    if (_ambient.masterGain) { try { _ambient.masterGain.disconnect(); } catch(e){} }
+    _ambient.masterGain = null;
+    _ambient.current = null;
+    renderAmbientPanel();
+}
+
+function getAmbientVolume() {
+    const saved = localStorage.getItem('lifeRPG_ambientVol');
+    return saved !== null ? parseFloat(saved) : 0.5;
+}
+
+function setAmbientVolume(v) {
+    localStorage.setItem('lifeRPG_ambientVol', v);
+    if (_ambient.masterGain) _ambient.masterGain.gain.value = v;
+}
+
+function playAmbient(kind) {
+    if (_ambient.current === kind) { stopAmbient(); return; } // toggle off
+    stopAmbient();
+    const ctx = getAudioContext();
+    const master = ctx.createGain();
+    master.gain.value = getAmbientVolume();
+    master.connect(ctx.destination);
+    _ambient.masterGain = master;
+    _ambient.current = kind;
+
+    const noiseBuf = makeNoiseBuffer(ctx);
+
+    function noiseSource() {
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuf;
+        src.loop = true;
+        return src;
+    }
+
+    if (kind === 'rain') {
+        // Filtered white noise — steady rain hiss
+        const src = noiseSource();
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 400;
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7000;
+        const g = ctx.createGain(); g.gain.value = 0.5;
+        src.connect(hp).connect(lp).connect(g).connect(master);
+        src.start();
+        _ambient.nodes.push(src, hp, lp, g);
+        // Random droplet patter: short noise bursts
+        const dropInt = setInterval(() => {
+            if (!_ambient.masterGain) return;
+            const d = ctx.createBufferSource(); d.buffer = noiseBuf;
+            const dg = ctx.createGain();
+            const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';
+            bp.frequency.value = 2000 + Math.random() * 5000; bp.Q.value = 8;
+            const t0 = ctx.currentTime;
+            dg.gain.setValueAtTime(0.12 + Math.random()*0.1, t0);
+            dg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.06);
+            d.connect(bp).connect(dg).connect(master);
+            d.start(t0); d.stop(t0 + 0.08);
+        }, 90);
+        _ambient.intervals.push(dropInt);
+
+    } else if (kind === 'storm') {
+        // Rain base, slightly darker
+        const src = noiseSource();
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 300;
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5000;
+        const g = ctx.createGain(); g.gain.value = 0.55;
+        src.connect(hp).connect(lp).connect(g).connect(master);
+        src.start();
+        _ambient.nodes.push(src, hp, lp, g);
+        // Wind gusts: slow LFO on a midband noise layer
+        const wind = noiseSource();
+        const wbp = ctx.createBiquadFilter(); wbp.type = 'bandpass'; wbp.frequency.value = 500; wbp.Q.value = 0.7;
+        const wg = ctx.createGain(); wg.gain.value = 0.12;
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07;
+        const lfoG = ctx.createGain(); lfoG.gain.value = 0.1;
+        lfo.connect(lfoG).connect(wg.gain);
+        wind.connect(wbp).connect(wg).connect(master);
+        wind.start(); lfo.start();
+        _ambient.nodes.push(wind, wbp, wg, lfo, lfoG);
+        // Thunder: random low rumbles
+        const thunderInt = setInterval(() => {
+            if (!_ambient.masterGain || Math.random() > 0.32) return;
+            const th = ctx.createBufferSource(); th.buffer = noiseBuf;
+            const tlp = ctx.createBiquadFilter(); tlp.type = 'lowpass';
+            const tg = ctx.createGain();
+            const t0 = ctx.currentTime;
+            const dur = 1.5 + Math.random() * 2.5;
+            tlp.frequency.setValueAtTime(220, t0);
+            tlp.frequency.exponentialRampToValueAtTime(60, t0 + dur);
+            tg.gain.setValueAtTime(0, t0);
+            tg.gain.linearRampToValueAtTime(0.55 + Math.random()*0.3, t0 + 0.08);
+            tg.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+            th.connect(tlp).connect(tg).connect(master);
+            th.start(t0); th.stop(t0 + dur + 0.1);
+        }, 4000);
+        _ambient.intervals.push(thunderInt);
+
+    } else if (kind === 'ocean') {
+        // Pink-ish noise with slow wave swell LFO
+        const src = noiseSource();
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+        const g = ctx.createGain(); g.gain.value = 0.35;
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 0.11; // ~9s per wave
+        const lfoG = ctx.createGain(); lfoG.gain.value = 0.28;
+        lfo.connect(lfoG).connect(g.gain);
+        src.connect(lp).connect(g).connect(master);
+        src.start(); lfo.start();
+        _ambient.nodes.push(src, lp, g, lfo, lfoG);
+        // Wave crashes: periodic higher-band swells
+        const waveInt = setInterval(() => {
+            if (!_ambient.masterGain || Math.random() > 0.6) return;
+            const w = ctx.createBufferSource(); w.buffer = noiseBuf;
+            const wbp = ctx.createBiquadFilter(); wbp.type = 'bandpass';
+            wbp.frequency.value = 1300; wbp.Q.value = 0.8;
+            const wgn = ctx.createGain();
+            const t0 = ctx.currentTime;
+            const dur = 2.2 + Math.random() * 1.6;
+            wgn.gain.setValueAtTime(0, t0);
+            wgn.gain.linearRampToValueAtTime(0.3, t0 + dur * 0.35);
+            wgn.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+            w.connect(wbp).connect(wgn).connect(master);
+            w.start(t0); w.stop(t0 + dur + 0.1);
+        }, 5200);
+        _ambient.intervals.push(waveInt);
+
+    } else if (kind === 'forest') {
+        // Gentle wind through leaves
+        const src = noiseSource();
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1100; bp.Q.value = 0.5;
+        const g = ctx.createGain(); g.gain.value = 0.16;
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 0.13;
+        const lfoG = ctx.createGain(); lfoG.gain.value = 0.07;
+        lfo.connect(lfoG).connect(g.gain);
+        src.connect(bp).connect(g).connect(master);
+        src.start(); lfo.start();
+        _ambient.nodes.push(src, bp, g, lfo, lfoG);
+        // Bird chirps: random frequency-swept sine blips
+        const birdInt = setInterval(() => {
+            if (!_ambient.masterGain || Math.random() > 0.45) return;
+            const t0 = ctx.currentTime;
+            const nChirps = 1 + Math.floor(Math.random() * 3);
+            for (let i = 0; i < nChirps; i++) {
+                const osc = ctx.createOscillator();
+                const og = ctx.createGain();
+                const f0 = 2200 + Math.random() * 2400;
+                const start = t0 + i * (0.12 + Math.random() * 0.1);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(f0, start);
+                osc.frequency.exponentialRampToValueAtTime(f0 * (1.2 + Math.random()*0.5), start + 0.08);
+                og.gain.setValueAtTime(0, start);
+                og.gain.linearRampToValueAtTime(0.07 + Math.random()*0.05, start + 0.015);
+                og.gain.exponentialRampToValueAtTime(0.001, start + 0.12);
+                osc.connect(og).connect(master);
+                osc.start(start); osc.stop(start + 0.15);
+            }
+        }, 2300);
+        _ambient.intervals.push(birdInt);
+    }
+
+    renderAmbientPanel();
+}
+
+const AMBIENT_DEFS = [
+    { id: 'rain',   icon: '🌧', label: 'Pluie' },
+    { id: 'storm',  icon: '⛈', label: 'Orage' },
+    { id: 'ocean',  icon: '🌊', label: 'Océan' },
+    { id: 'forest', icon: '🌲', label: 'Forêt' }
+];
+
+function renderAmbientPanel() {
+    const panel = document.getElementById('ambient-panel');
+    if (!panel) return;
+    const vol = getAmbientVolume();
+    panel.innerHTML = `
+    <div class="ambient-card">
+        <div class="ambient-grid">
+            ${AMBIENT_DEFS.map(a => `
+                <button class="ambient-btn ${_ambient.current === a.id ? 'playing' : ''}"
+                        onclick="playAmbient('${a.id}')">
+                    <span class="ambient-icon">${a.icon}</span>
+                    <span class="ambient-label">${a.label}</span>
+                    ${_ambient.current === a.id ? '<span class="ambient-eq"><i></i><i></i><i></i></span>' : ''}
+                </button>`).join('')}
+        </div>
+        <div class="ambient-vol-row">
+            <span class="ambient-vol-icon">🔉</span>
+            <input type="range" min="0" max="1" step="0.05" value="${vol}"
+                   class="ambient-vol-slider" oninput="setAmbientVolume(parseFloat(this.value))" />
+            <span class="ambient-vol-icon">🔊</span>
+            ${_ambient.current ? `<button class="timer-btn timer-btn-danger" style="margin-left:8px;" onclick="stopAmbient()">⏹</button>` : ''}
+        </div>
+        <div class="ambient-note">Sons générés en direct — l'audio se coupe si l'écran se verrouille (limite navigateur).</div>
+    </div>`;
+}
+
+
 loadGameState();
 renderDebugToggleBtn();
 const savedTab = localStorage.getItem('lifeRPG_tab_v3') || 'habits';
@@ -6354,6 +6889,19 @@ if (savedHabitsSubtab === 'tasks' && typeof switchHabitsSubtab === 'function') {
 }
 // V8.0: initial dot update
 setTimeout(() => { if (typeof updateHabitsTasksDot === 'function') updateHabitsTasksDot(); }, 0);
+
+// V9.0a: resume an active timer after reload. If it expired while the app was
+// closed, complete it now (logs the planned duration).
+setTimeout(() => {
+    const t = gameState.activeTimer;
+    if (!t) return;
+    if (!t.paused && new Date(t.endTime) <= new Date()) {
+        completeTimer(); // expired while away → log it
+    } else {
+        startTimerTick();
+        renderTimerPanel();
+    }
+}, 0);
 
 // V7.0b: flush pending journal autosave when page is about to be hidden/closed
 window.addEventListener('beforeunload', () => {

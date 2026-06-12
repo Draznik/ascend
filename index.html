@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Ascend V8.1</title>
+    <title>Ascend V9.1</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-512.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Ascend">
     <meta name="theme-color" content="#070912">
-    <link rel="stylesheet" href="style.css?v=8.1">
+    <link rel="stylesheet" href="style.css?v=9.1">
 </head>
 <body>
 
@@ -130,12 +130,24 @@
         <div class="avatar-username-wrap" style="margin-bottom:20px;">
             <span class="avatar-username" style="cursor:default;">Sessions</span>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+
+        <!-- V9.0a: active timer panel (rendered by JS when a timer runs) -->
+        <div id="timer-panel"></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;">
             <div class="section-title" style="margin:0;">Sessions actives</div>
-            <button class="btn-blue" style="padding:10px 18px;font-size:0.82rem;"
-                onclick="openNewSessionModal()">+ Nouvelle Session</button>
+            <div style="display:flex;gap:8px;">
+                <button class="btn-gold" style="padding:10px 14px;font-size:0.82rem;"
+                    onclick="openTimerModal()">⏱ Timer</button>
+                <button class="btn-blue" style="padding:10px 14px;font-size:0.82rem;"
+                    onclick="openNewSessionModal()">+ Session</button>
+            </div>
         </div>
         <div class="sessions-list" id="sessions-list"></div>
+
+        <!-- V9.0a: ambient sounds panel -->
+        <div class="section-title" style="margin-top:22px;">🎧 Sons d'ambiance</div>
+        <div id="ambient-panel"></div>
     </div>
 
     <!-- PAGE: CAMPAGNE -->
@@ -205,6 +217,6 @@
     </button>
 </nav>
 
-<script src="app.js?v=8.1"></script>
+<script src="app.js?v=9.1"></script>
 </body>
 </html>
