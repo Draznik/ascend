@@ -55,7 +55,7 @@ const STORAGE_KEY = 'lifeRPGState_v3';
 // ─────────────────────────────────────────────
 //  V5 CONSTANTS (must be before loadGameState)
 // ─────────────────────────────────────────────
-const APP_VERSION = 'V9.2';
+const APP_VERSION = 'V10.0b';
 
 const TITLES_BY_SKILL = {
     serenite:   [
@@ -2267,7 +2267,7 @@ function renderHabitsPage() {
         const weaponHtml  = weaponPct > 0
             ? `<span class="habit-weapon-boost"> · +${weaponPct}% ⚔️</span>` : '';
         const streakHtml  = currentStreak > 0
-            ? `<span class="habit-streak"> · 🔥${currentStreak}j (+${streakBonus}%)</span>` : '';
+            ? `<span class="habit-streak"> · 🔥${currentStreak}j (+${streakBonus}%)${streakBadge(currentStreak)}</span>` : '';
         const skillCfg    = SKILL_CONFIG[habit.category || 'discipline'];
         const recoTag     = habit.isRecommended
             ? `<span class="habit-reco-tag" style="color:${skillCfg.color}">${skillCfg.icon}</span>` : '';
@@ -2652,6 +2652,10 @@ function renderProfilPage() {
     // V6.0a: Mood section
     const moodEl = document.getElementById('profil-mood-section');
     if (moodEl) moodEl.innerHTML = buildMoodSection();
+
+    // V10.0b: global session time stats
+    const sessStatsEl = document.getElementById('profil-session-stats');
+    if (sessStatsEl) sessStatsEl.innerHTML = buildSessionStatsBlock();
 
     // V9.2: correlation view
     const corrEl = document.getElementById('profil-correlation-section');
@@ -3876,7 +3880,9 @@ function buildBossTab() {
     const hpPct = isFighting ? Math.min(100, ((c.bossXPAccumulated||0)/totalHP)*100) : 0;
     const skillCfg = boss.skill==='all' ? {icon:'⭐',name:'Toutes compétences',color:'#f5c842'} : SKILL_CONFIG[boss.skill];
     const bgs = {1:'radial-gradient(ellipse at 50% 30%,#2a1a08 0%,#0d0806 100%)',2:'radial-gradient(ellipse at 50% 30%,#091a09 0%,#040904 100%)',3:'radial-gradient(ellipse at 50% 30%,#1a0808 0%,#090404 100%)',4:'radial-gradient(ellipse at 50% 30%,#08080f 0%,#040407 100%)',5:'radial-gradient(ellipse at 50% 30%,#050510 0%,#030308 100%)'};
-    const imgHtml = boss.img ? `<img class="boss-hero-img" src="${boss.img}" alt="${boss.name}" onerror="this.style.display='none';this.nextSibling.style.display='flex'">` : '';
+    // V10.0b: legendary aura around the boss image when fighting in Legendary
+    const isLegendFight = isFighting && c.difficulty === 'legendaire';
+    const imgHtml = boss.img ? `<img class="boss-hero-img ${isLegendFight ? 'legend-aura-img' : ''}" src="${boss.img}" alt="${boss.name}" onerror="this.style.display='none';this.nextSibling.style.display='flex'">` : '';
     const phStyle = boss.img ? 'display:none' : '';
     // Timer
     let timerHtml = '';
@@ -4000,20 +4006,25 @@ function buildVictoryBoard() {
         legendaire: '#f5c842',
         unknown:    '#777'
     };
-    const rows = BOSS_DATA
+    // V10.0b: gallery with boss portraits + animated legendary aura
+    const cards = BOSS_DATA
         .filter(b => c.bossDefeated.includes(b.id))
         .map(b => {
             const diff = victories[b.id] || 'unknown';
             const label = diff === 'unknown' ? 'Inconnue' : DIFF_LABELS[diff];
             const color = DIFF_COLORS[diff];
             const isLegend = diff === 'legendaire';
+            const portrait = b.img
+                ? `<img class="victory-portrait-img" src="${b.img}" alt="${b.name}" loading="lazy"
+                       onerror="this.outerHTML='<span class=\\'victory-portrait-emoji\\'>${b.emoji}</span>'">`
+                : `<span class="victory-portrait-emoji">${b.emoji}</span>`;
             return `
-            <div class="victory-row ${isLegend ? 'legend' : ''}">
-                <span class="victory-emoji">${b.emoji}</span>
-                <span class="victory-name">${b.name}</span>
-                <span class="victory-diff" style="color:${color};border-color:${color}40;background:${color}14;">
-                    ${isLegend ? '👑 ' : ''}${label}
-                </span>
+            <div class="victory-card ${isLegend ? 'legend-aura' : ''}">
+                <div class="victory-portrait">${portrait}
+                    ${isLegend ? '<span class="legend-crown">👑</span>' : ''}
+                </div>
+                <div class="victory-card-name">${b.name}</div>
+                <div class="victory-diff" style="color:${color};border-color:${color}40;background:${color}14;">${label}</div>
             </div>`;
         }).join('');
     const legendCount = c.bossDefeated.filter(id => victories[id] === 'legendaire').length;
@@ -4024,8 +4035,8 @@ function buildVictoryBoard() {
             <span class="victory-board-title">🏆 Tableau de chasse</span>
             <span class="victory-board-count">${legendCount}/${totalBosses} en Légendaire</span>
         </div>
-        ${rows}
-        <div class="victory-board-note">Re-affronte un boss en Légendaire pour améliorer ton tableau.</div>
+        <div class="victory-gallery">${cards}</div>
+        <div class="victory-board-note">Re-affronte un boss en Légendaire pour faire briller son portrait.</div>
     </div>`;
 }
 
@@ -4266,6 +4277,64 @@ function getMoodAverageOld(days = 30) {
 // ─────────────────────────────────────────────
 //  V6.0a — MOOD UI in Profil
 // ─────────────────────────────────────────────
+
+// V10.0a: donut chart — proportional breakdown of mood notes over the period
+function buildMoodPieChart(period) {
+    const cutoff = getLocalDateStr((() => { const d = getNow(); d.setDate(d.getDate() - period.days); return d; })());
+    const moods = (gameState.moods || []).filter(m => m.date >= cutoff);
+    if (moods.length === 0) return '';
+
+    const counts = {1:0, 2:0, 3:0, 4:0, 5:0};
+    moods.forEach(m => { if (counts[m.value] !== undefined) counts[m.value]++; });
+    const total = moods.length;
+
+    const R = 32, CX = 40, CY = 40;
+    let angle = -90; // start at top
+    const segments = [];
+    MOOD_OPTIONS.forEach(opt => {
+        const count = counts[opt.value];
+        if (count === 0) return;
+        const pct = count / total;
+        const sweep = pct * 360;
+        const startRad = angle * Math.PI / 180;
+        const endRad = (angle + sweep) * Math.PI / 180;
+        const x1 = CX + R * Math.cos(startRad), y1 = CY + R * Math.sin(startRad);
+        const x2 = CX + R * Math.cos(endRad),   y2 = CY + R * Math.sin(endRad);
+        const largeArc = sweep > 180 ? 1 : 0;
+        // Full circle edge case (single mood value = 100%)
+        const d = sweep >= 359.99
+            ? `M${CX-R},${CY} A${R},${R} 0 1 1 ${CX+R},${CY} A${R},${R} 0 1 1 ${CX-R},${CY} Z`
+            : `M${CX},${CY} L${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+        segments.push({ d, color: opt.color, label: opt.label, count, pct });
+        angle += sweep;
+    });
+
+    const arcsHtml = segments.map(s =>
+        `<path d="${s.d}" fill="${s.color}" opacity="0.85"><title>${s.label}: ${s.count} (${Math.round(s.pct*100)}%)</title></path>`
+    ).join('');
+
+    const legendHtml = segments.map(s =>
+        `<div class="mood-pie-legend-row">
+            <span class="mood-pie-dot" style="background:${s.color}"></span>
+            <span class="mood-pie-label">${s.label}</span>
+            <span class="mood-pie-pct">${Math.round(s.pct*100)}%</span>
+        </div>`
+    ).join('');
+
+    return `<div class="mood-pie-wrap">
+        <div class="mood-graph-label">Répartition ${period.label}</div>
+        <div class="mood-pie-row">
+            <svg viewBox="0 0 80 80" class="mood-pie-svg">
+                <circle cx="40" cy="40" r="32" fill="rgba(255,255,255,0.03)"/>
+                ${arcsHtml}
+                <circle cx="40" cy="40" r="18" fill="var(--bg-card)"/>
+                <text x="40" y="44" text-anchor="middle" class="mood-pie-center-text">${total}</text>
+            </svg>
+            <div class="mood-pie-legend">${legendHtml}</div>
+        </div>
+    </div>`;
+}
+
 function buildMoodSection() {
     const periodKey = _graphPeriod.mood || '30d';
     const period = GRAPH_PERIODS.find(p => p.key === periodKey) || GRAPH_PERIODS[1];
@@ -4394,6 +4463,7 @@ function buildMoodSection() {
             </svg>
         </div>
         ${calHtml}
+        ${buildMoodPieChart(period)}
     </div>`;
 }
 
@@ -4732,8 +4802,10 @@ function getSkillXPHistory(skillKey, periodKey) {
     return buckets;
 }
 
-// Generic SVG bar graph builder (used for skills XP and mood)
-function buildBarGraphSVG(buckets, color, periodKey) {
+
+// V10.0a: Line/area graph builder — replaces bars for skill XP evolution.
+// Smooth curve via simple cubic bezier between points, with gradient area fill.
+function buildLineGraphSVG(buckets, color, periodKey, opts = {}) {
     if (!buckets || buckets.length === 0) {
         return '<div class="graph-empty">Pas de données sur cette période.</div>';
     }
@@ -4741,18 +4813,31 @@ function buildBarGraphSVG(buckets, color, periodKey) {
     const innerW = W - 2*padding;
     const innerH = H - 2*padding;
     const max = Math.max(...buckets.map(b => b.value), 1);
-    const barW = innerW / buckets.length;
     const total = buckets.reduce((s,b) => s + b.value, 0);
+    const n = buckets.length;
 
-    const barsHtml = buckets.map((b, i) => {
-        const h = (b.value / max) * innerH;
-        const x = padding + i * barW + 1;
-        const y = H - padding - h;
-        const w = Math.max(1, barW - 2);
-        return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color}" opacity="${b.value > 0 ? 0.9 : 0}" rx="1">
-            <title>${b.label}: ${b.value} XP</title>
-        </rect>`;
-    }).join('');
+    const pts = buckets.map((b, i) => {
+        const x = n === 1 ? W/2 : padding + (i / (n - 1)) * innerW;
+        const y = H - padding - (b.value / max) * innerH;
+        return { x, y, value: b.value, label: b.label };
+    });
+
+    // Smooth path via cubic bezier (Catmull-Rom-ish simple midpoint control)
+    let pathD = `M${pts[0].x},${pts[0].y}`;
+    let areaD = `M${pts[0].x},${H-padding} L${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i-1], cur = pts[i];
+        const midX = (prev.x + cur.x) / 2;
+        pathD += ` C${midX},${prev.y} ${midX},${cur.y} ${cur.x},${cur.y}`;
+        areaD += ` C${midX},${prev.y} ${midX},${cur.y} ${cur.x},${cur.y}`;
+    }
+    areaD += ` L${pts[pts.length-1].x},${H-padding} Z`;
+
+    const dotsHtml = pts.map(p => p.value > 0
+        ? `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.2" fill="${color}"><title>${p.label}: ${p.value} XP</title></circle>`
+        : '').join('');
+
+    const gradId = 'lg' + Math.random().toString(36).slice(2,8);
 
     const periodSelector = GRAPH_PERIODS.map(p => {
         const active = p.key === periodKey;
@@ -4764,8 +4849,16 @@ function buildBarGraphSVG(buckets, color, periodKey) {
         <span class="graph-period-label">sur la période</span>
     </div>
     <svg viewBox="0 0 ${W} ${H}" class="graph-svg" preserveAspectRatio="none">
+        <defs>
+            <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
         <line x1="${padding}" y1="${H-padding}" x2="${W-padding}" y2="${H-padding}" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
-        ${barsHtml}
+        <path d="${areaD}" fill="url(#${gradId})" stroke="none"/>
+        <path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.6" opacity="0.9"/>
+        ${dotsHtml}
     </svg>`;
 }
 
@@ -4781,7 +4874,7 @@ function buildSkillGraph(skillKey) {
 
     return `<div class="skill-xp-graph">
         <div class="graph-period-row">${periodBtns}</div>
-        ${buildBarGraphSVG(buckets, cfg.color, periodKey)}
+        ${buildLineGraphSVG(buckets, cfg.color, periodKey)}
     </div>`;
 }
 
@@ -5529,7 +5622,7 @@ function renderJournalMain() {
             <button class="journal-tool-btn" onclick="openJournalCalendarModal()">📅 Calendrier</button>
             ${!isToday ? `<button class="journal-tool-btn" onclick="journalBackToToday()">Aujourd'hui</button>` : ''}
             <div class="journal-streak">
-                🔥 <strong>${streak}</strong> j ${longest > 0 ? `· record ${longest}` : ''}
+                🔥 <strong>${streak}</strong> j ${longest > 0 ? `· record ${longest}` : ''}${streakBadge(streak)}
             </div>
         </div>
         ${renderJournalStatsRow()}
@@ -6164,7 +6257,7 @@ function renderTasksPage() {
     <div class="tasks-header">
         <div class="tasks-header-top">
             <div class="section-title" style="margin:0;">Tâches du jour</div>
-            <div class="tasks-streak">🔥 <strong>${streak}</strong> j ${longest > 0 ? `· record ${longest}` : ''}</div>
+            <div class="tasks-streak">🔥 <strong>${streak}</strong> j ${longest > 0 ? `· record ${longest}` : ''}${streakBadge(streak)}</div>
         </div>
         <div class="tasks-cap ${xpCapHit ? 'cap-hit' : ''}" title="Cap journalier pour limiter le farm">
             💎 XP tâches : <strong>${xpToday}</strong>/${TASK_XP_DAILY_CAP}
@@ -6407,6 +6500,63 @@ function commitEditTask() {
     saveGameState();
     document.getElementById('edit-task-modal')?.remove();
     renderTasksPage();
+}
+
+
+/* ═══════════════════════════════════════════
+   V10.0b — STREAK MILESTONE BADGES (7j / 30j / 100j)
+   ═══════════════════════════════════════════ */
+const STREAK_MILESTONES = [
+    { min: 100, icon: '🏆', cls: 'streak-badge-100', label: '100 jours+' },
+    { min: 30,  icon: '🥈', cls: 'streak-badge-30',  label: '30 jours+' },
+    { min: 7,   icon: '🥉', cls: 'streak-badge-7',   label: '7 jours+' }
+];
+
+// Returns a small badge span for the highest milestone reached, or ''
+function streakBadge(streak) {
+    const m = STREAK_MILESTONES.find(m => streak >= m.min);
+    if (!m) return '';
+    return `<span class="streak-badge ${m.cls}" title="Palier ${m.label}">${m.icon}</span>`;
+}
+
+// V10.0b: cumulative session time across ALL sessions & logs.
+// Shows total hours, log count, and the most-practiced session.
+function buildSessionStatsBlock() {
+    let totalMins = 0, totalLogs = 0;
+    let top = null;
+    (gameState.sessions || []).forEach(s => {
+        const mins = (s.logs || []).reduce((sum, l) => sum + (l.minutes || 0), 0);
+        totalMins += mins;
+        totalLogs += (s.logs || []).length;
+        if (!top || mins > top.mins) top = { name: s.name, mins, category: s.category };
+    });
+    if (totalLogs === 0) return '';
+
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    const timeLabel = h > 0 ? `${h}h${m > 0 ? String(m).padStart(2,'0') : ''}` : `${m} min`;
+    const topCfg = top ? SKILL_CONFIG[top.category] : null;
+    const topMins = top ? Math.floor(top.mins / 60) : 0;
+
+    return `
+    <div class="session-stats-block">
+        <div class="section-title" style="margin-top:16px;">⏳ Temps investi</div>
+        <div class="session-stats-grid">
+            <div class="session-stat-card">
+                <div class="session-stat-val">${timeLabel}</div>
+                <div class="session-stat-lbl">temps total</div>
+            </div>
+            <div class="session-stat-card">
+                <div class="session-stat-val">${totalLogs}</div>
+                <div class="session-stat-lbl">session${totalLogs>1?'s':''} loggée${totalLogs>1?'s':''}</div>
+            </div>
+            ${top && top.mins > 0 ? `
+            <div class="session-stat-card wide">
+                <div class="session-stat-val" style="color:${topCfg?.color || 'var(--gold)'}">${topCfg?.icon || ''} ${escapeHtml(top.name)}</div>
+                <div class="session-stat-lbl">activité n°1 · ${topMins > 0 ? topMins + 'h' : top.mins + ' min'}</div>
+            </div>` : ''}
+        </div>
+    </div>`;
 }
 
 

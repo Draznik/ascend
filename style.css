@@ -3276,3 +3276,203 @@ button, .tab-btn, .boss-chip, .camp-subtab, .btn-gold, .btn-blue, .btn-cancel {
     font-size: 0.62rem; color: var(--text-dim);
     text-align: center; font-style: italic;
 }
+
+/* ═══════════════════════════════════════════
+   V10.0a — LINE GRAPHS + MOOD PIE CHART
+   ═══════════════════════════════════════════ */
+
+/* Mood donut chart */
+.mood-pie-wrap { margin-top: 12px; }
+.mood-pie-row {
+    display: flex; align-items: center; gap: 16px;
+    margin-top: 6px;
+}
+.mood-pie-svg { width: 80px; height: 80px; flex-shrink: 0; }
+.mood-pie-center-text {
+    fill: var(--text-dim);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+}
+.mood-pie-legend {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 4px;
+}
+.mood-pie-legend-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.74rem;
+}
+.mood-pie-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    flex-shrink: 0;
+}
+.mood-pie-label { color: var(--text); flex: 1; }
+.mood-pie-pct {
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+}
+
+/* ═══════════════════════════════════════════
+   V10.0b — STREAK BADGES + SESSION STATS + GALLERY + LEGENDARY AURA
+   ═══════════════════════════════════════════ */
+
+/* Streak milestone badges */
+.streak-badge {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 0.85em;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 3px rgba(245,200,66,0.4));
+}
+.streak-badge-100 { animation: badgeGlow 2s ease-in-out infinite; }
+@keyframes badgeGlow {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(245,200,66,0.4)); }
+    50% { filter: drop-shadow(0 0 8px rgba(245,200,66,0.9)); }
+}
+
+/* Session time stats */
+.session-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.session-stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+}
+.session-stat-card.wide { grid-column: 1 / -1; }
+.session-stat-val {
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gold);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.session-stat-lbl {
+    font-size: 0.64rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 3px;
+}
+
+/* Victory gallery with portraits */
+.victory-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.victory-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 6px;
+    text-align: center;
+    position: relative;
+}
+.victory-portrait {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+    background: rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+}
+.victory-portrait-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.victory-portrait-emoji { font-size: 2rem; }
+.legend-crown {
+    position: absolute;
+    top: 3px; right: 4px;
+    font-size: 0.95rem;
+    filter: drop-shadow(0 0 4px rgba(245,200,66,0.8));
+    z-index: 2;
+}
+.victory-card-name {
+    font-size: 0.66rem;
+    color: var(--text);
+    line-height: 1.2;
+    min-height: 2.4em;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 5px;
+    overflow: hidden;
+}
+.victory-card .victory-diff {
+    display: inline-block;
+    font-size: 0.58rem;
+    padding: 2px 7px;
+}
+
+/* ── LEGENDARY AURA — Hearthstone-style golden card ── */
+.victory-card.legend-aura {
+    border-color: rgba(245,200,66,0.5);
+    background:
+        linear-gradient(135deg, rgba(245,200,66,0.10), rgba(245,200,66,0.02));
+    overflow: hidden;
+}
+/* Rotating light sweep */
+.victory-card.legend-aura::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(245,200,66,0.0) 60deg,
+        rgba(245,200,66,0.25) 90deg,
+        rgba(255,240,180,0.4) 100deg,
+        rgba(245,200,66,0.25) 110deg,
+        transparent 140deg,
+        transparent 360deg
+    );
+    animation: auraRotate 4s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+@keyframes auraRotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+/* Shimmer sweep across the card */
+.victory-card.legend-aura::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -120%;
+    width: 60%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,245,200,0.18), transparent);
+    animation: auraShimmer 3.2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+@keyframes auraShimmer {
+    0%   { left: -120%; }
+    55%  { left: 140%; }
+    100% { left: 140%; }
+}
+.victory-card.legend-aura > * { position: relative; z-index: 1; }
+.victory-card.legend-aura .victory-portrait {
+    box-shadow: 0 0 14px rgba(245,200,66,0.45), inset 0 0 8px rgba(245,200,66,0.2);
+    border: 1px solid rgba(245,200,66,0.5);
+}
+
+/* Legendary aura on the main boss image during a Legendary fight */
+.boss-hero-img.legend-aura-img {
+    box-shadow:
+        0 0 18px rgba(245,200,66,0.55),
+        0 0 42px rgba(245,200,66,0.25);
+    border: 1px solid rgba(245,200,66,0.6) !important;
+    animation: bossLegendPulse 2.6s ease-in-out infinite;
+}
+@keyframes bossLegendPulse {
+    0%, 100% { box-shadow: 0 0 18px rgba(245,200,66,0.55), 0 0 42px rgba(245,200,66,0.25); }
+    50%      { box-shadow: 0 0 26px rgba(245,200,66,0.8),  0 0 60px rgba(245,200,66,0.4); }
+}
